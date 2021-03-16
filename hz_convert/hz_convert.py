@@ -1,20 +1,19 @@
-#! python
+#! /usr/bin/env python3
 
-# Script to convert scientific pitch notation to Hz
-# Brad Gersh
-# Started: 2017-01-11
-# Last revised: 2017-05-09
-# Updated 2019-01-07 to add MIDI to Pitch Name module.
-# Updated 2020-03-20 to add capability for pitch sets in pitch_to_hz module.
-# Updated 2020-08-01 for Python 3 compatibility.
+"""
+Script to convert scientific pitch notation to Hz
+Brad Gersh
+Started: 2017-01-11
+Last revised: 2017-05-09
+Recent revisions:
+ - 2019-01-07: added MIDI to Pitch Name module.
+ - 2020-03-20: added capability for pitch sets in pitch_to_hz_tool.
+ - 2020-08-01: added Python 3 compatibility.
+"""
 
 import math
 
 a4_hz = 440.0
-
-
-def pitch_to_hz():
-    pass
 
 
 def pitch_to_hz_tool():
