@@ -5,7 +5,7 @@ A simple command-line script to convert between sine-tone frequencies (Hz), MIDI
 The script runs in Python 3 via the command
 
 ```bash
-python hzConvert.py
+python hz_convert.py
 ```
 
 You will be asked set a reference point for the note A4 (defaults to A4 = 440 Hz) before selecting the type of conversion you want. Specific instructions for each conversion are given after the menu selection has been made.
