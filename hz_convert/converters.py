@@ -1,23 +1,7 @@
-#! python
-
-# Script to convert scientific pitch notation to Hz
-# Brad Gersh
-# Started: 2017-01-11
-# Last revised: 2017-05-09
-# Updated 2019-01-07 to add MIDI to Pitch Name module.
-# Updated 2020-03-20 to add capability for pitch sets in pitch_to_hz module.
-# Updated 2020-08-01 for Python 3 compatibility.
-
 import math
 
-a4_hz = 440.0
 
-
-def pitch_to_hz():
-    pass
-
-
-def pitch_to_hz_tool():
+def pitch_to_hz_tool(a4_hz):
     print("A4 = %.3f Hz" % a4_hz)
     print("\nEnter a list of pitches in scientific pitch notation (separated by spaces) press ENTER. Format is pitch name (A-G), accidental (see next), and octave (an integer), all without spaces. Examples: Cn4, Bb8, F#4.\n\nAccidentals can be #, b, or n (natural). Double sharps and flats are indicated by x and d (a single-character version of double flat). Rational accidentals are indicated by a fraction before the accidental in parens, e.g. (1/4)#, (2/3)b. Accidentals MAY NOT BE OMITTED. e.g. B(3/4)#8.\n\nWARNING: Quarter tones are indicated by HALF accidentals. This is because accidentals themselves already embed semitones. Thus a quarter tone above Cn4 is C \'half sharp\', or C(1/2)#4.\n\nExample input: Cn4 D#6 B(1/2)b3")
 
@@ -241,10 +225,9 @@ def pitch_to_hz_tool():
                 print("Semitone distances: " +
                       " ".join("%i" % n for n in distance))
         print("Hz values: " + " ".join("%.2f" % n for n in hz))
-    top_menu()
 
 
-def hz_to_pitch_tool():
+def hz_to_pitch_tool(a4_hz):
     print("A4 = 440 assumed. Enter number as a decimal. Type X to quit.")
 
     while(True):
@@ -296,10 +279,9 @@ def hz_to_pitch_tool():
 
         except ValueError:
             print("Not a decimal number.")
-    top_menu()
 
 
-def midi_to_pitch_tool():
+def midi_to_pitch_tool(a4_hz):
     print("A4 = 440 assumed. Enter number as a decimal. Type X to quit.")
 
     while(True):
@@ -351,39 +333,3 @@ def midi_to_pitch_tool():
 
         except ValueError:
             print("Not a decimal number.")
-
-    top_menu()
-
-
-def top_menu():
-    print("\nMake a selection:\n(1) Pitch name to Hz (and MIDI).\n(2) Hz to pitch name.\n(3) MIDI to pitch name.\n(X) Exit.")
-    choice = input("> ")
-    if choice == "1":
-        pitch_to_hz_tool()
-    elif choice == "2":
-        hz_to_pitch_tool()
-    elif choice == "3":
-        midi_to_pitch_tool()
-    else:
-        pass
-
-
-def main():
-    print("=== PITCH CONVERTER ===")
-    print("Converts between different notations for pitch: Hz, MIDI, and pitch name.\n")
-    a4_hz = input("Value for A4 in Hz (Press ENTER for default, A4=440)")
-    if a4_hz == "":
-        a4_hz = 440.0
-    try:
-        a4_hz = float(a4_hz)
-    except ValueError:
-        print("Press ENTER or input a number.")
-
-    st_hz = 2**(1.0/12)
-    print("Semitone Hz = {}".format(st_hz))
-
-    top_menu()
-
-
-if __name__ == "__main__":
-    main()
