@@ -5,7 +5,6 @@ Script to convert scientific pitch notation to Hz
 Brad Gersh
 """
 
-import math
 import converters
 
 
