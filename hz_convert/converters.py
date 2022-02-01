@@ -230,7 +230,6 @@ def pitch_to_hz_loop(a4_hz):
                       ' '.join('%i' % n for n in distance))
         print('Hz values: ' + ' '.join('%.2f' % n for n in hz))
 
-
 def hz_to_pitch_loop(a4_hz):
     print('A4 = 440 assumed. Enter number as a decimal. Type X to quit.')
 
@@ -284,7 +283,6 @@ def hz_to_pitch_loop(a4_hz):
         except ValueError:
             print('Not a decimal number.')
 
-
 def midi_to_pitch_loop(a4_hz):
     print('Enter MIDI number as an integer or decimal number. Type X to quit.')
 
@@ -304,7 +302,6 @@ def midi_to_pitch_loop(a4_hz):
             print('[BUG] Invalid pitch class number.')
             continue
 
-
 def midi_to_pitch(midi_note):
     midi_note = float(midi_note)
     cents_dev_direction = get_cents_dev_direction(midi_note)
@@ -313,13 +310,19 @@ def midi_to_pitch(midi_note):
     cents_dev = get_cents_dev(midi_note, rounded_pitch)
     octave = get_octave(midi_note)
 
-    return pitch_class_name, octave, cents_dev_direction, cents_dev
+    return {
+        'pitch_class_name': pitch_class_name,
+        'octave': octave,
+        'cents_dev_direction': cents_dev_direction,
+        'cents_dev': cents_dev
+    }
 
 def midi_to_pitch_string(midi_note):
-    pitch_class_name, octave, cents_dev_direction, cents_dev = midi_to_pitch(midi_note)
+    pitch_data = midi_to_pitch(midi_note)
+    print(type(pitch_data))
 
-    return 'Pitch name: ' + pitch_class_name + '%i ' % octave + \
-       cents_dev_direction + ' %.1f c' % cents_dev
+    return ('Pitch name: ' + pitch_data['pitch_class_name'] + '%i ' % pitch_data['octave'] +
+       pitch_data['cents_dev_direction'] + ' %.1f c' % (pitch_data['cents_dev']))
 
 def assign_name(pitch_class):
     pc_names = {
