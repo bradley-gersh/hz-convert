@@ -231,7 +231,7 @@ def pitch_to_hz_tool(a4_hz):
         print('Hz values: ' + ' '.join('%.2f' % n for n in hz))
 
 
-def hz_to_pitch_tool():
+def hz_to_pitch_tool(a4_hz):
     print('A4 = 440 assumed. Enter number as a decimal. Type X to quit.')
 
     while(True):
@@ -297,24 +297,23 @@ def midi_to_pitch_tool(a4_hz):
         try:
             midi_note = float(midi_note)
         except ValueError:
-            print('Not a decimal number.')
+            print('Not a decimal number. Type X to quit.')
             continue
 
-        frac_part = midi_note % 1
-        name_from_below = frac_part <= 0.5
-        pitch_class_number = math.floor(midi_note) % 12 if name_from_below else math.ceil(midi_note) % 12
+        cents_dev_direction = '+' if (midi_note % 1) <= 0.5 else '-'
+        rounded_pitch = round(midi_note)
 
         try:
-            pitch_class_name = assign_name(pitch_class_number)
+            pitch_class_name = assign_name(rounded_pitch % 12)
         except KeyError:
             print('Invalid pitch class number.')
             continue
 
-        cents = get_cents_deviation(midi_note, pitch_class_number)
+        cents = get_cents_deviation(midi_note, rounded_pitch)
         octave = get_octave(midi_note)
 
         print('Pitch name: ' + pitch_class_name +
-                '%i + %.1f c' % (octave, cents))
+                '%i ' % (octave) + cents_dev_direction + ' %.1f c' % (cents))
 
         hz = midi_to_hz(midi_note, a4_hz)
         print('Hz value: %.3f' % hz)
