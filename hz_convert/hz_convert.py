@@ -1,16 +1,16 @@
 #! /usr/bin/env python3
 
-"""
-Script to convert scientific pitch notation to Hz
-Brad Gersh
-"""
+#
+# Script to convert scientific pitch notation to Hz
+# Brad Gersh
+#
 
 import converters
 
-
 def main():
     print("=== PITCH CONVERTER ===")
-    print("Converts between different notations for pitch: Hz, MIDI, and pitch name.\n")
+    print("Converts between different notations for equal-tempered pitch: Hz, MIDI, and pitch name.\n")
+
     a4_hz = input("Value for A4 in Hz (Press ENTER for default, A4=440)")
     if a4_hz == "":
         a4_hz = 440.0
@@ -18,9 +18,6 @@ def main():
         a4_hz = float(a4_hz)
     except ValueError:
         print("Press ENTER or input a number.")
-
-    st_hz = 2**(1.0/12)
-    print("Semitone Hz = {}".format(st_hz))
 
     top_menu(a4_hz)
 
