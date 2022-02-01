@@ -8,9 +8,17 @@ A4_HZ = 440.0
 
 class TestMidiToPitchLoop(unittest.TestCase):
     def test_exits_normally(self):
-        with mock.patch('builtins.input', side_effect=['x']), \
+        with mock.patch('builtins.input', side_effect=['X']), \
                 mock.patch('sys.stdout', new = StringIO()) as mock_stdout:
             self.assertTrue(midi_to_pitch_loop(A4_HZ))
+
+    def test_handles_good_input(self):
+        with mock.patch('builtins.input', side_effect=['69', '22.5', 'X']), \
+                mock.patch('sys.stdout', new = StringIO()) as mock_stdout:
+            self.assertTrue(midi_to_pitch_loop(A4_HZ))
+            out = mock_stdout.getvalue().strip().split('\n')
+            self.assertListEqual(out[-4:-2], ['Pitch name: An4 + 0.0 c', 'Hz value: 440.000'])
+            self.assertListEqual(out[-2:], ['Pitch name: Bb0 + 50.0 c', 'Hz value: 29.989'])
 
     def test_handles_broken_input(self):
         with mock.patch('builtins.input', side_effect=['not a number', 'x']), \

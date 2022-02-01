@@ -3,6 +3,5 @@
   "python.testing.unittestArgs": [
     "-s",
     "./test",
-    "-p",
   ],
 }
