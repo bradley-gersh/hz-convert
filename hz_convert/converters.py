@@ -1,5 +1,23 @@
 import math
 
+# Constants
+OCTAVE_DIV = 12
+ST_HZ = 2**(1.0/OCTAVE_DIV)
+MIDI_REF = 69 # An4
+PC_NAMES = {
+    0: "Cn",
+    1: "C#",
+    2: "Dn",
+    3: "Eb",
+    4: "En",
+    5: "Fn",
+    6: "F#",
+    7: "Gn",
+    8: "G#",
+    9: "An",
+    10: "Bb",
+    11: "Bn"
+}
 
 def pitch_to_hz_tool(a4_hz):
     print("A4 = %.3f Hz" % a4_hz)
@@ -281,9 +299,8 @@ def hz_to_pitch_tool():
             print("Not a decimal number.")
 
 
-def midi_to_pitch_tool():
-    print("A4 = 440 assumed. Enter number as a decimal. Type X to quit.")
-    a4_hz = 440.0
+def midi_to_pitch_tool(a4_hz):
+    print("Enter MIDI number as an integer or decimal number. Type X to quit.")
 
     while(True):
         midi_note = input("\nMIDI: ")
@@ -292,45 +309,29 @@ def midi_to_pitch_tool():
             break
 
         try:
-            # Ideally, fix bug where cents can be 100, e.g. C#4 + 100 c (which should read Dn4 + 0.0 c).
             midi_note = float(midi_note)
-            pitch_class = math.floor(midi_note) % 12
-            if pitch_class == 0:
-                pitch_class_name = "Cn"
-            elif pitch_class == 1:
-                pitch_class_name = "C#"
-            elif pitch_class == 2:
-                pitch_class_name = "Dn"
-            elif pitch_class == 3:
-                pitch_class_name = "Eb"
-            elif pitch_class == 4:
-                pitch_class_name = "En"
-            elif pitch_class == 5:
-                pitch_class_name = "Fn"
-            elif pitch_class == 6:
-                pitch_class_name = "F#"
-            elif pitch_class == 7:
-                pitch_class_name = "Gn"
-            elif pitch_class == 8:
-                pitch_class_name = "Ab"
-            elif pitch_class == 9:
-                pitch_class_name = "An"
-            elif pitch_class == 10:
-                pitch_class_name = "Bb"
-            elif pitch_class == 11:
-                pitch_class_name = "Bn"
-            cents = 100 * (midi_note - math.floor(midi_note))
+
+            frac_part = midi_note % 1
+            name_from_below = frac_part <= 0.5
+            pitch_class = math.floor(midi_note) % 12 if name_from_below else math.ceil(midi_note)
+            pitch_class_name = assign_name(pitch_class)
+
+            cents = 100 * abs(midi_note - pitch_class)
             octave = math.floor(midi_note/12.0) - 1
+
             print("Pitch name: " + pitch_class_name +
                   "%i + %.1f c" % (octave, cents))
 
             # Convert MIDI note to Hz
             # A4 = 69. Count semitones from A4.
-            midi_ref = 69  # The MIDI value for A4
-            distance = midi_note - midi_ref
-            st_hz = 2**(1.0/12)
-            hz = a4_hz * (st_hz**(distance))
+            distance = midi_note - MIDI_REF
+            hz = a4_hz * (ST_HZ**(distance))
             print("Hz value: %.3f" % hz)
 
         except ValueError:
             print("Not a decimal number.")
+
+
+# Helper functions
+def assign_name(pitch_class):
+    return PC_NAMES.get(pitch_class, "Invalid pitch class")
