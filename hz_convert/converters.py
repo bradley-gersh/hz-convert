@@ -5,7 +5,7 @@ OCTAVE_DIV = 12
 ST_HZ = 2**(1.0/OCTAVE_DIV)
 MIDI_REF = 69 # An4
 
-def pitch_to_hz_tool(a4_hz):
+def pitch_to_hz_loop(a4_hz):
     print('A4 = %.3f Hz' % a4_hz)
     print('\nEnter a list of pitches in scientific pitch notation (separated by spaces) press ENTER. Format is pitch name (A-G), accidental (see next), and octave (an integer), all without spaces. Examples: Cn4, Bb8, F#4.\n\nAccidentals can be #, b, or n (natural). Double sharps and flats are indicated by x and d (a single-character version of double flat). Rational accidentals are indicated by a fraction before the accidental in parens, e.g. (1/4)#, (2/3)b. Accidentals MAY NOT BE OMITTED. e.g. B(3/4)#8.\n\nWARNING: Quarter tones are indicated by HALF accidentals. This is because accidentals themselves already embed semitones. Thus a quarter tone above Cn4 is C \'half sharp\', or C(1/2)#4.\n\nExample input: Cn4 D#6 B(1/2)b3')
 
@@ -231,7 +231,7 @@ def pitch_to_hz_tool(a4_hz):
         print('Hz values: ' + ' '.join('%.2f' % n for n in hz))
 
 
-def hz_to_pitch_tool(a4_hz):
+def hz_to_pitch_loop(a4_hz):
     print('A4 = 440 assumed. Enter number as a decimal. Type X to quit.')
 
     while(True):
@@ -285,40 +285,42 @@ def hz_to_pitch_tool(a4_hz):
             print('Not a decimal number.')
 
 
-def midi_to_pitch_tool(a4_hz):
+def midi_to_pitch_loop(a4_hz):
     print('Enter MIDI number as an integer or decimal number. Type X to quit.')
 
     while(True):
         midi_note = input('\nMIDI: ')
 
-        if midi_note in ('X', 'x'):
-            break
+        if midi_note.lower() == 'x':
+            return True
 
         try:
-            midi_note = float(midi_note)
+            print(midi_to_pitch_string(midi_note))
+            print(midi_to_hz_string(midi_note, a4_hz))
         except ValueError:
             print('Not a decimal number. Type X to quit.')
             continue
-
-        cents_dev_direction = '+' if (midi_note % 1) <= 0.5 else '-'
-        rounded_pitch = round(midi_note)
-
-        try:
-            pitch_class_name = assign_name(rounded_pitch % 12)
         except KeyError:
-            print('Invalid pitch class number.')
+            print('[BUG] Invalid pitch class number.')
             continue
 
-        cents = get_cents_deviation(midi_note, rounded_pitch)
-        octave = get_octave(midi_note)
 
-        print('Pitch name: ' + pitch_class_name +
-                '%i ' % (octave) + cents_dev_direction + ' %.1f c' % (cents))
+def midi_to_pitch(midi_note):
+    midi_note = float(midi_note)
+    cents_dev_direction = get_cents_dev_direction(midi_note)
+    rounded_pitch = round(midi_note)
+    pitch_class_name = assign_name(rounded_pitch % 12)
+    cents_dev = get_cents_dev(midi_note, rounded_pitch)
+    octave = get_octave(midi_note)
 
-        hz = midi_to_hz(midi_note, a4_hz)
-        print('Hz value: %.3f' % hz)
+    return pitch_class_name, octave, cents_dev_direction, cents_dev
 
-# Helper functions
+def midi_to_pitch_string(midi_note):
+    pitch_class_name, octave, cents_dev_direction, cents_dev = midi_to_pitch(midi_note)
+
+    return 'Pitch name: ' + pitch_class_name + '%i ' % octave + \
+       cents_dev_direction + ' %.1f c' % cents_dev
+
 def assign_name(pitch_class):
     pc_names = {
         0: 'Cn',
@@ -336,7 +338,10 @@ def assign_name(pitch_class):
     }
     return pc_names[pitch_class]
 
-def get_cents_deviation(midi_note, pitch_class_number):
+def get_cents_dev_direction(midi_note):
+    return '+' if (midi_note % 1) <= 0.5 else '-'
+
+def get_cents_dev(midi_note, pitch_class_number):
     return round(100 * abs(midi_note - pitch_class_number), 1)
 
 def get_octave(midi_note):
@@ -345,3 +350,7 @@ def get_octave(midi_note):
 def midi_to_hz(midi_note, a4_hz):
     distance = midi_note - MIDI_REF
     return round(a4_hz * (ST_HZ**distance), 3)
+
+def midi_to_hz_string(midi_note, a4_hz):
+    hz = midi_to_hz(midi_note, a4_hz)
+    return 'Hz value: %.3f' % hz

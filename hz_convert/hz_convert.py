@@ -27,11 +27,11 @@ def top_menu(a4_hz):
         print('\nMake a selection:\n(1) Pitch name to Hz (and MIDI).\n(2) Hz to pitch name.\n(3) MIDI to pitch name.\n(X) Exit.')
         choice = input('> ')
         if choice == '1':
-            converters.pitch_to_hz_tool(a4_hz)
+            converters.pitch_to_hz_loop(a4_hz)
         elif choice == '2':
-            converters.hz_to_pitch_tool(a4_hz)
+            converters.hz_to_pitch_loop(a4_hz)
         elif choice == '3':
-            converters.midi_to_pitch_tool(a4_hz)
+            converters.midi_to_pitch_loop(a4_hz)
         elif choice in ('X', 'x'):
             break
         else:

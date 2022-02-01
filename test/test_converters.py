@@ -1,8 +1,16 @@
 import unittest
+from unittest import mock
 
-from hz_convert.converters import assign_name, get_octave, get_cents_deviation, midi_to_hz
+from hz_convert.converters import midi_to_pitch_tool, assign_name, get_octave, get_cents_deviation, midi_to_hz
 
-class TestMidiToPitch(unittest.TestCase):
+class TestMidiToPitchLoop(unittest.TestCase):
+    a4_hz = 440.0
+
+    def test_loop_exits(self):
+        with mock.patch('builtins.input', side_effect=['220', 'x']):
+            self.assertTrue(midi_to_pitch_tool(440.0))
+
+class TestMidiToPitchHelpers(unittest.TestCase):
     def test_assign_name_to_Cn(self):
         self.assertEqual(assign_name(0), 'Cn')
         self.assertEqual(assign_name(8), 'G#')
