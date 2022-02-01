@@ -302,28 +302,22 @@ def midi_to_pitch_tool(a4_hz):
 
         frac_part = midi_note % 1
         name_from_below = frac_part <= 0.5
-        pitch_class = math.floor(midi_note) % 12 if name_from_below else math.ceil(midi_note)
+        pitch_class_number = math.floor(midi_note) % 12 if name_from_below else math.ceil(midi_note) % 12
 
         try:
-            pitch_class_name = assign_name(pitch_class)
+            pitch_class_name = assign_name(pitch_class_number)
         except KeyError:
             print('Invalid pitch class number.')
             continue
 
-        cents = 100 * abs(midi_note - pitch_class)
-        octave = math.floor(midi_note/12.0) - 1
+        cents = get_cents_deviation(midi_note, pitch_class_number)
+        octave = get_octave(midi_note)
 
         print('Pitch name: ' + pitch_class_name +
                 '%i + %.1f c' % (octave, cents))
 
-        # Convert MIDI note to Hz
-        # A4 = 69. Count semitones from A4.
-        distance = midi_note - MIDI_REF
-        hz = a4_hz * (ST_HZ**(distance))
+        hz = midi_to_hz(midi_note, a4_hz)
         print('Hz value: %.3f' % hz)
-
-
-
 
 # Helper functions
 def assign_name(pitch_class):
@@ -342,3 +336,13 @@ def assign_name(pitch_class):
         11: 'Bn'
     }
     return pc_names[pitch_class]
+
+def get_cents_deviation(midi_note, pitch_class_number):
+    return round(100 * abs(midi_note - pitch_class_number), 1)
+
+def get_octave(midi_note):
+    return math.floor(midi_note/12.0) - 1
+
+def midi_to_hz(midi_note, a4_hz):
+    distance = midi_note - MIDI_REF
+    return round(a4_hz * (ST_HZ**distance), 3)
