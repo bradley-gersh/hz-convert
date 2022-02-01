@@ -227,7 +227,7 @@ def pitch_to_hz_tool(a4_hz):
         print("Hz values: " + " ".join("%.2f" % n for n in hz))
 
 
-def hz_to_pitch_tool(a4_hz):
+def hz_to_pitch_tool():
     print("A4 = 440 assumed. Enter number as a decimal. Type X to quit.")
 
     while(True):
@@ -281,8 +281,9 @@ def hz_to_pitch_tool(a4_hz):
             print("Not a decimal number.")
 
 
-def midi_to_pitch_tool(a4_hz):
+def midi_to_pitch_tool():
     print("A4 = 440 assumed. Enter number as a decimal. Type X to quit.")
+    a4_hz = 440.0
 
     while(True):
         midi_note = input("\nMIDI: ")

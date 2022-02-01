@@ -32,9 +32,9 @@ def top_menu(a4_hz):
         if choice == "1":
             converters.pitch_to_hz_tool(a4_hz)
         elif choice == "2":
-            converters.hz_to_pitch_tool(a4_hz)
+            converters.hz_to_pitch_tool()
         elif choice == "3":
-            converters.midi_to_pitch_tool(a4_hz)
+            converters.midi_to_pitch_tool()
         elif choice in ("X", "x"):
             break
         else:
