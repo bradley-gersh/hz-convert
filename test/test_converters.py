@@ -1,3 +1,4 @@
+from io import StringIO
 import unittest
 from unittest import mock
 
@@ -6,16 +7,25 @@ from hz_convert.converters import midi_to_pitch_loop, midi_to_pitch, midi_to_pit
 A4_HZ = 440.0
 
 class TestMidiToPitchLoop(unittest.TestCase):
-    def test_loop_exits(self):
-        with mock.patch('builtins.input', side_effect=['x']):
+    def test_exits_normally(self):
+        with mock.patch('builtins.input', side_effect=['x']), \
+                mock.patch('sys.stdout', new = StringIO()) as mock_stdout:
             self.assertTrue(midi_to_pitch_loop(A4_HZ))
 
-    def test_midi_to_pitch(self):
-        with \
-            mock.patch('hz_convert.converters.get_cents_dev_direction', side_effect=['+', '-']), \
-            mock.patch('hz_convert.converters.assign_name', side_effect=['An', 'D#']), \
-            mock.patch('hz_convert.converters.get_cents_dev', side_effect=[23.2, 43.1]), \
-            mock.patch('hz_convert.converters.get_octave', side_effect=[3, 5]):
+    def test_handles_broken_input(self):
+        with mock.patch('builtins.input', side_effect=['not a number', 'x']), \
+                mock.patch('sys.stdout', new = StringIO()) as mock_stdout:
+            self.assertTrue(midi_to_pitch_loop(A4_HZ))
+            out = mock_stdout.getvalue().strip().split('\n')[-1]
+            self.assertEqual(out, 'Not a decimal number. Type X to quit.')
+
+class TestMidiToPitch(unittest.TestCase):
+    def test_normal_input(self):
+        with mock.patch('hz_convert.converters.get_cents_dev_direction', \
+                    side_effect=['+', '-']), \
+                mock.patch('hz_convert.converters.assign_name', side_effect=['An', 'D#']), \
+                mock.patch('hz_convert.converters.get_cents_dev', side_effect=[23.2, 43.1]), \
+                mock.patch('hz_convert.converters.get_octave', side_effect=[3, 5]):
 
             self.assertDictEqual(midi_to_pitch(57.232), {
                 'pitch_class_name': 'An',
@@ -30,7 +40,7 @@ class TestMidiToPitchLoop(unittest.TestCase):
                 'cents_dev': 43.1
             })
 
-    def test_midi_to_pitch_string(self):
+    def test_string_helper(self):
         pitches = [
             {
                 'pitch_class_name': 'An',
@@ -57,8 +67,11 @@ class TestMidiToPitchHelpers(unittest.TestCase):
         self.assertEqual(assign_name(10), 'Bb')
 
     def test_assign_name_fails_out_of_range(self):
-        with self.assertRaises(KeyError):
+        with self.assertRaises(KeyError), \
+                mock.patch('sys.stdout', new = StringIO()) as mock_stdout:
             assign_name(12)
+            out = mock_stdout.getvalue().strip().split('\n')[-1]
+            self.assertEqual(out, '[BUG] Invalid pitch class number.')
 
     def test_get_octave(self):
         self.assertEqual(get_octave(60), 4)

@@ -1,4 +1,5 @@
 import math
+from multiprocessing.sharedctypes import Value
 
 # Constants
 OCTAVE_DIV = 12
@@ -293,17 +294,18 @@ def midi_to_pitch_loop(a4_hz):
             return True
 
         try:
-            print(midi_to_pitch_string(midi_note))
-            print(midi_to_hz_string(midi_note, a4_hz))
+            midi_note = float(midi_note)
         except ValueError:
             print('Not a decimal number. Type X to quit.')
             continue
+
+        try:
+            print(midi_to_pitch_string(midi_note))
+            print(midi_to_hz_string(midi_note, a4_hz))
         except KeyError:
-            print('[BUG] Invalid pitch class number.')
             continue
 
 def midi_to_pitch(midi_note):
-    midi_note = float(midi_note)
     cents_dev_direction = get_cents_dev_direction(midi_note)
     rounded_pitch = round(midi_note)
     pitch_class_name = assign_name(rounded_pitch % 12)
@@ -319,7 +321,6 @@ def midi_to_pitch(midi_note):
 
 def midi_to_pitch_string(midi_note):
     pitch_data = midi_to_pitch(midi_note)
-    print(type(pitch_data))
 
     return ('Pitch name: ' + pitch_data['pitch_class_name'] + '%i ' % pitch_data['octave'] +
        pitch_data['cents_dev_direction'] + ' %.1f c' % (pitch_data['cents_dev']))
@@ -339,7 +340,13 @@ def assign_name(pitch_class):
         10: 'Bb',
         11: 'Bn'
     }
-    return pc_names[pitch_class]
+
+    try:
+        return pc_names[pitch_class]
+    except KeyError:
+        print('[BUG] Invalid pitch class number.')
+        raise
+
 
 def get_cents_dev_direction(midi_note):
     return '+' if (midi_note % 1) <= 0.5 else '-'
