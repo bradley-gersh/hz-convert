@@ -2,13 +2,13 @@
 
 #
 # Script to convert scientific pitch notation to Hz
-# Brad Gersh
+# Bradley Gersh
 #
 
-import converters
+from . import converters
 
 def main():
-    print('=== PITCH CONVERTER ===')
+    print('\n=== PITCH CONVERTER ===')
     print('Converts between different notations for equal-tempered pitch: Hz, MIDI, and pitch name.\n')
 
     a4_hz = input('Value for A4 in Hz (Press ENTER for default, A4=440)')

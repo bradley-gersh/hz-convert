@@ -1,7 +1,9 @@
 # Hz Convert
+
 A simple command-line script to convert between sine-tone frequencies (Hz), MIDI pitch numbers, and pitch names in scientific pitch notation (e.g. "E-flat 4").
 
 ## Usage
+
 The script runs in Python 3 via the command
 
 ```bash

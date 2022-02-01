@@ -301,7 +301,7 @@ def midi_to_pitch_loop(a4_hz):
 
         try:
             print(midi_to_pitch_string(midi_note))
-            print(midi_to_hz_string(midi_note, a4_hz))
+            print(midi_to_hz_string(midi_note, a4_hz) + '\n')
         except KeyError:
             continue
 
