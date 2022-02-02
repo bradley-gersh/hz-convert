@@ -288,13 +288,13 @@ def midi_to_pitch_loop(a4_hz):
     print('Enter MIDI number as an integer or decimal number. Type X to quit.')
 
     while(True):
-        midi_note = input('\nMIDI: ')
+        midi_in = input('\nMIDI: ')
 
-        if midi_note.lower() == 'x':
+        if midi_in.lower() == 'x':
             return True
 
         try:
-            midi_note = float(midi_note)
+            midi_note = float(midi_in)
         except ValueError:
             print('Not a decimal number. Type X to quit.')
             continue
@@ -305,7 +305,7 @@ def midi_to_pitch_loop(a4_hz):
         except KeyError:
             continue
 
-def midi_to_pitch(midi_note):
+def midi_to_pitch(midi_note: float):
     cents_dev_direction = get_cents_dev_direction(midi_note)
     rounded_pitch = round(midi_note)
     pitch_class_name = assign_name(rounded_pitch % 12)
@@ -319,13 +319,13 @@ def midi_to_pitch(midi_note):
         'cents_dev': cents_dev
     }
 
-def midi_to_pitch_string(midi_note):
+def midi_to_pitch_string(midi_note: float):
     pitch_data = midi_to_pitch(midi_note)
 
     return ('Pitch name: ' + pitch_data['pitch_class_name'] + '%i ' % pitch_data['octave'] +
        pitch_data['cents_dev_direction'] + ' %.1f c' % (pitch_data['cents_dev']))
 
-def assign_name(pitch_class):
+def assign_name(pitch_class: int):
     pc_names = {
         0: 'Cn',
         1: 'C#',
@@ -341,11 +341,10 @@ def assign_name(pitch_class):
         11: 'Bn'
     }
 
-    try:
-        return pc_names[pitch_class]
-    except KeyError:
-        print('[BUG] Invalid pitch class number.')
-        raise
+    if pitch_class < 0 or pitch_class > 11:
+        raise KeyError('[BUG] Invalid pitch class number')
+
+    return pc_names[pitch_class]
 
 
 def get_cents_dev_direction(midi_note):
