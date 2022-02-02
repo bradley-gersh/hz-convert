@@ -10,7 +10,9 @@ START_CHAR = '- '
 # Interaction loops
 def pitch_to_hz_loop(a4_hz):
     print('A4 = %.3f Hz' % a4_hz)
-    print('\nEnter a list of pitches in scientific pitch notation (separated by spaces) press ENTER. Format is pitch name (A-G), accidental (see next), and octave (an integer), all without spaces. Examples: Cn4, Bb8, F#4.\n\nAccidentals can be #, b, or n (natural). Double sharps and flats are indicated by x and d (a single-character version of double flat). Rational accidentals are indicated by a fraction before the accidental in parens, e.g. (1/4)#, (2/3)b. Accidentals MAY NOT BE OMITTED. e.g. B(3/4)#8.\n\nWARNING: Quarter tones are indicated by HALF accidentals. This is because accidentals themselves already embed semitones. Thus a quarter tone above Cn4 is C \'half sharp\', or C(1/2)#4.\n\nExample input: Cn4 D#6 B(1/2)b3')
+    print("\nEnter a list of pitches in scientific pitch notation (separated by spaces) press ENTER. Format is pitch name (A-G), accidental (see next), and octave (an integer), all without spaces. Examples: Cn4, Bb8, F#4.\n")
+    print("Accidentals can be #, b, or n (natural). Double sharps and flats are indicated by x and d (a single-character version of double flat). Rational accidentals are indicated by a fraction before the accidental in parens, e.g. (1/4)#, (2/3)b. Accidentals MAY NOT BE OMITTED. e.g. B(3/4)#8.\n")
+    print("\nWARNING: Quarter tones are indicated by HALF accidentals. This is because accidentals themselves already embed semitones. Thus a quarter tone above Cn4 is C 'half sharp', or C(1/2)#4.\n\nExample input: Cn4 D#6 B(1/2)b3")
 
     print('\nType X to quit.')
 
@@ -256,7 +258,6 @@ def hz_to_pitch_loop(a4_hz):
         print(pitch_string(pitch_data))
         print(midi_string(midi_note) + '\n')
 
-
 def midi_to_pitch_loop(a4_hz):
     print('Enter MIDI number as an integer or decimal number. Type X to quit.')
 
@@ -307,6 +308,9 @@ def pitch_string(pitch_data):
        pitch_data['cents_dev_direction'] + ' %.1f c' % (pitch_data['cents_dev']))
 
 def hz_string(hz):
+    if type(hz) is not float:
+        raise TypeError("Hz must be a float")
+
     return START_CHAR + 'Hz value: %.3f' % hz
 
 def midi_string(midi_note):
@@ -333,7 +337,6 @@ def assign_name(pitch_class):
         raise KeyError('[BUG] Invalid pitch class number')
 
     return pc_names[pitch_class]
-
 
 def get_cents_dev_direction(midi_note):
     return '+' if (midi_note % 1) <= 0.5 else '-'
