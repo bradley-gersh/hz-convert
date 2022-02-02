@@ -18,9 +18,11 @@ class Pitch():
 # Interaction loops
 def pitch_to_hz_loop(a4_hz):
     print('A4 = %.2f Hz' % a4_hz)
-    print("\nEnter a list of pitches in scientific pitch notation (separated by spaces) press ENTER. Format is pitch name (A-G), accidental (see next), and octave (an integer), all without spaces. Examples: Cn4, Bb8, F#4.\n")
-    print("Accidentals can be #, b, or n (natural). Double sharps and flats are indicated by x and d (a single-character version of double flat). Rational accidentals are indicated by a fraction before the accidental in parens, e.g. (1/4)#, (2/3)b. Accidentals MAY NOT BE OMITTED. e.g. B(3/4)#8.\n")
-    print("\nWARNING: Quarter tones are indicated by HALF accidentals. This is because accidentals themselves already embed semitones. Thus a quarter tone above Cn4 is C 'half sharp', or C(1/2)#4.\n\nExample input: Cn4 D#6 B(1/2)b3")
+    print("\nEnter a list of pitches in scientific pitch notation (separated by spaces) press ENTER.\n\nFormat: Pitch name (A-G), then accidental (see next), then octave (an integer). Multiple pitches can be entered together, separated by spaces.")
+    print("\nExample inputs:\nC4\nBb8\nA2 F#4 D5")
+    print("Valid accidentals: d (double flat), b (flat), n (natural, can be omitted), # (sharp), x (double sharp).")
+    print("\nMicrotonal accidentals are indicated by a fraction before the accidental in parens, e.g. C(1/4)#, E(2/3)b.")
+    print("\nCaution: Quarter tones are indicated by half-accidentals. Quarter-flat is (1/2)b, quarter-sharp is (1/2)#. For B(1/2)b, think 'halfway between B and Bb.'")
 
     print('\nType X to quit.')
 
@@ -37,10 +39,11 @@ def pitch_to_hz_loop(a4_hz):
             hz = [midi_to_hz(float(midi_note), a4_hz) for midi_note in midi_notes]
             microtonal = any([midi_note % 1 != 0 for midi_note in midi_notes])
         except Exception as e:
-            print('[error] Syntax error in parsing pitch.')
+            print('[error] Syntax error in parsing pitch: ', end = '')
+            print(e)
         else:
             print(midi_string(midi_notes, microtonal))
-            print(hz_string(hz) + '\n')
+            print(hz_string(hz))
 
 def hz_to_pitch_loop(a4_hz):
     print('Enter number as a decimal. Type X to quit.\n')
@@ -57,11 +60,9 @@ def hz_to_pitch_loop(a4_hz):
             midi_notes = [hz_to_midi(float(hz), a4_hz) for hz in hzs]
             pitch_data = [midi_to_pitch(midi_note) for midi_note in midi_notes]
             microtonal = any([midi_note % 1 != 0 for midi_note in midi_notes])
-        except ValueError:
-            print('[error] Not a decimal number. Type X to quit.\n')
-            continue
-        except KeyError:
-            continue
+        except Exception as e:
+            print('[error] Syntax error: ', end = '')
+            print(e)
         else:
             print(pitch_string(pitch_data))
             print(midi_string(midi_notes, microtonal))
@@ -81,11 +82,9 @@ def midi_to_pitch_loop(a4_hz):
         try:
             pitches = [midi_to_pitch(float(midi_note)) for midi_note in midi_notes]
             hzs = [midi_to_hz(float(midi_note), a4_hz) for midi_note in midi_notes]
-        except ValueError:
-            print('[error] Not a decimal number. Type X to quit.')
-            continue
-        except KeyError:
-            continue
+        except Exception as e:
+            print('[error] Syntax error: ', end='')
+            print(e)
 
         print(pitch_string(pitches))
         print(hz_string(hzs))
@@ -105,7 +104,7 @@ def pitch_str_to_midi(pitch_str):
     match = re.fullmatch(pitch_format, pitch_str)
 
     if not match:
-        raise ValueError('[error] Invalid pitch format. Refer to instructions.\n')
+        raise ValueError('Invalid pitch format. Refer to instructions.\n')
 
     (pitch_name, numerator, denominator, accidental, octave) = match.group(1, 3, 4, 5, 6)
 
@@ -153,7 +152,7 @@ def pitch_string(pitches):
             '%i ' % pitch.octave + pitch.cents_dev_direction + \
             ' %.1f c' % pitch.cents_dev for pitch in pitches])
     except TypeError:
-        raise TypeError('[error] Unable to process pitch string data.')
+        raise TypeError('Unable to process pitch string data.')
     else:
         return out_str
 
@@ -169,7 +168,7 @@ def hz_string(hzs):
     try:
         out_str = START_CHAR + prefix + ', '.join('%.2f' % hz for hz in hzs)
     except TypeError:
-        raise TypeError("[error] Hz values must be floats.")
+        raise TypeError("Hz values must be floats.")
     else:
         return out_str
 
@@ -187,7 +186,7 @@ def midi_string(midi_notes, microtonal = False):
     try:
         out_str = START_CHAR + prefix + ', '.join(num_format % midi_note for midi_note in midi_notes)
     except TypeError:
-        raise TypeError("[error] MIDI values must be numerical.")
+        raise TypeError("MIDI values must be numerical.")
     else:
         return out_str
 
@@ -211,7 +210,7 @@ def assign_name(pitch_class):
     try:
         pc_name = pc_names[pitch_class]
     except KeyError:
-        raise KeyError('[error] Invalid pitch class number')
+        raise KeyError('Invalid pitch class number')
     else:
         return pc_name
 
@@ -248,7 +247,7 @@ def accidental_to_value(accidental):
     try:
         accidental_value = accidental_values[accidental]
     except KeyError:
-        raise KeyError('[error] Invalid accidental type.\n')
+        raise KeyError('Invalid accidental type.\n')
     else:
         return accidental_value
 
@@ -257,11 +256,11 @@ def microtone_to_cents_dev(accidental, numerator, denominator):
 
     if numerator is not None and denominator is not None:
         if (accidental not in ('b', '#')):
-            raise ValueError('[error] Only # and b are possible with microtone (fraction) notation.')
+            raise ValueError('Only # and b are possible with microtone (fraction) notation.')
         try:
             ratio = float(numerator) / float(denominator)
         except ValueError:
-            raise ValueError('[error] numerator or denominator not a number')
+            raise ValueError('Numerator or denominator not a number.')
         else:
             accidental_value *= ratio
 

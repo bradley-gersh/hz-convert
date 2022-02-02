@@ -11,7 +11,7 @@ def main():
     print('\n=== PITCH CONVERTER ===')
     print('Converts between different notations for equal-tempered pitch: Hz, MIDI, and pitch name.\n')
 
-    a4_hz = input('Value for A4 in Hz (Press ENTER for default, A4=440)')
+    a4_hz = input('> Input value for A4 in Hz (Press ENTER for default, A4=440): ')
     if a4_hz == '':
         a4_hz = 440.0
     try:
