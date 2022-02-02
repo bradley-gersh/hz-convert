@@ -17,7 +17,7 @@ class Pitch():
 
 # Interaction loops
 def pitch_to_hz_loop(a4_hz):
-    print('A4 = %.3f Hz' % a4_hz)
+    print('A4 = %.2f Hz' % a4_hz)
     print("\nEnter a list of pitches in scientific pitch notation (separated by spaces) press ENTER. Format is pitch name (A-G), accidental (see next), and octave (an integer), all without spaces. Examples: Cn4, Bb8, F#4.\n")
     print("Accidentals can be #, b, or n (natural). Double sharps and flats are indicated by x and d (a single-character version of double flat). Rational accidentals are indicated by a fraction before the accidental in parens, e.g. (1/4)#, (2/3)b. Accidentals MAY NOT BE OMITTED. e.g. B(3/4)#8.\n")
     print("\nWARNING: Quarter tones are indicated by HALF accidentals. This is because accidentals themselves already embed semitones. Thus a quarter tone above Cn4 is C 'half sharp', or C(1/2)#4.\n\nExample input: Cn4 D#6 B(1/2)b3")
@@ -37,10 +37,10 @@ def pitch_to_hz_loop(a4_hz):
             hz = [midi_to_hz(float(midi_note), a4_hz) for midi_note in midi_notes]
             microtonal = any([midi_note % 1 != 0 for midi_note in midi_notes])
         except Exception as e:
-            print('[error] ' + e)
+            print('[error] Syntax error in parsing pitch.')
         else:
             print(midi_string(midi_notes, microtonal))
-            print(hz_string(hz))
+            print(hz_string(hz) + '\n')
 
 def hz_to_pitch_loop(a4_hz):
     print('Enter number as a decimal. Type X to quit.\n')
@@ -82,7 +82,7 @@ def midi_to_pitch_loop(a4_hz):
             pitches = [midi_to_pitch(float(midi_note)) for midi_note in midi_notes]
             hzs = [midi_to_hz(float(midi_note), a4_hz) for midi_note in midi_notes]
         except ValueError:
-            print('Not a decimal number. Type X to quit.')
+            print('[error] Not a decimal number. Type X to quit.')
             continue
         except KeyError:
             continue
@@ -109,49 +109,18 @@ def pitch_str_to_midi(pitch_str):
 
     (pitch_name, numerator, denominator, accidental, octave) = match.group(1, 3, 4, 5, 6)
 
-    if numerator is not None and denominator is not None:
-        cents_dev = microtone_to_cents_dev(accidental, numerator, denominator)
-    else:
-        cents_dev = 0
+    cents_dev = microtone_to_cents_dev(accidental, numerator, denominator)
 
     pitch = Pitch(pitch_name, int(octave), '+', float(cents_dev))
     midi = pitch_obj_to_midi(pitch)
 
     return midi
 
-def microtone_to_cents_dev(accidental, numerator, denominator):
-    if (accidental not in ('b', '#')):
-        raise ValueError('[error] Only # and b are possible with microtones.')
-    ratio = float(numerator) / float(denominator)
-    accidental_value = accidental_to_value(accidental) * ratio
-
-    return accidental_value * 100
-
-def accidental_to_value(accidental):
-    accidental_values = {
-        'd': -2,
-        'b': -1,
-        'n': 0,
-        '#': 1,
-        'x': 2
-    }
-
-    if accidental == '':
-        accidental = 'n'
-
-    try:
-        accidental_value = accidental_values[accidental]
-    except KeyError:
-        raise KeyError('[error] Invalid accidental type.\n')
-    else:
-        return accidental_value
-
 def pitch_obj_to_midi(pitch):
     diatonic_class = assign_diatonic_pc(pitch.pitch_class_name)
     midi_note = round(diatonic_class + OCTAVE_DIV * (pitch.octave + 1) + pitch.cents_dev / 100, 2)
 
     return midi_note
-
 
 def midi_to_pitch(midi_note):
     cents_dev_direction = get_cents_dev_direction(midi_note)
@@ -198,7 +167,7 @@ def hz_string(hzs):
         prefix = 'Hz value: '
 
     try:
-        out_str = START_CHAR + prefix + ', '.join('%.3f' % hz for hz in hzs)
+        out_str = START_CHAR + prefix + ', '.join('%.2f' % hz for hz in hzs)
     except TypeError:
         raise TypeError("[error] Hz values must be floats.")
     else:
@@ -242,7 +211,7 @@ def assign_name(pitch_class):
     try:
         pc_name = pc_names[pitch_class]
     except KeyError:
-        raise KeyError('[BUG] Invalid pitch class number')
+        raise KeyError('[error] Invalid pitch class number')
     else:
         return pc_name
 
@@ -260,9 +229,43 @@ def assign_diatonic_pc(name):
     try:
         diatonic_pc_number = diatonic_pc_numbers[name.upper()]
     except KeyError:
-        raise KeyError('[BUG] Invalid pitch class name')
+        raise KeyError('[error] Invalid pitch class name')
     else:
         return diatonic_pc_number
+
+def accidental_to_value(accidental):
+    accidental_values = {
+        'd': -2,
+        'b': -1,
+        'n': 0,
+        '#': 1,
+        'x': 2
+    }
+
+    if accidental is None:
+        accidental = 'n'
+
+    try:
+        accidental_value = accidental_values[accidental]
+    except KeyError:
+        raise KeyError('[error] Invalid accidental type.\n')
+    else:
+        return accidental_value
+
+def microtone_to_cents_dev(accidental, numerator, denominator):
+    accidental_value = accidental_to_value(accidental)
+
+    if numerator is not None and denominator is not None:
+        if (accidental not in ('b', '#')):
+            raise ValueError('[error] Only # and b are possible with microtone (fraction) notation.')
+        try:
+            ratio = float(numerator) / float(denominator)
+        except ValueError:
+            raise ValueError('[error] numerator or denominator not a number')
+        else:
+            accidental_value *= ratio
+
+    return round(accidental_value * 100, 3)
 
 def get_cents_dev_direction(midi_note):
     return '+' if (midi_note % 1) <= 0.5 else '-'
