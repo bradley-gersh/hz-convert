@@ -238,7 +238,7 @@ def hz_to_pitch_loop(a4_hz):
         hz_in = input('\nHz: ')
 
         if hz_in in ('X', 'x'):
-            break
+            return True
 
         try:
             hz = float(hz_in)
