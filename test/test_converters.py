@@ -67,19 +67,22 @@ class TestMidiToPitch(unittest.TestCase):
                 mock.patch('hz_convert.converters.get_cents_dev', side_effect=[23.2, 43.1]), \
                 mock.patch('hz_convert.converters.get_octave', side_effect=[3, 5]):
 
-            self.assertDictEqual(c.midi_to_pitch(57.232), {
-                'pitch_class_name': 'An',
-                'octave': 3,
-                'cents_dev_direction': '+',
-                'cents_dev': 23.2
-            })
-            self.assertDictEqual(c.midi_to_pitch(74.569), {
-                'pitch_class_name': 'D#',
-                'octave': 5,
-                'cents_dev_direction': '-',
-                'cents_dev': 43.1
-            })
+            pitch1 = c.midi_to_pitch(57.232)
+            pitch2 = c.midi_to_pitch(75.569)
 
+            self.assertListEqual([
+                pitch1.pitch_class_name,
+                pitch1.octave,
+                pitch1.cents_dev_direction,
+                pitch1.cents_dev
+            ], ['An', 3, '+', 23.2])
+
+            self.assertListEqual([
+                pitch2.pitch_class_name,
+                pitch2.octave,
+                pitch2.cents_dev_direction,
+                pitch2.cents_dev
+            ], ['D#', 5, '-', 43.1])
 
 class TestOutputs(unittest.TestCase):
     def test_hz_string_one_good_input(self):
@@ -88,7 +91,7 @@ class TestOutputs(unittest.TestCase):
         self.assertEqual(c.hz_string(730.184), '- Hz value: 730.184')
 
     def test_hz_string_many_good_inputs(self):
-        self.assertEqual(c.hz_string([440, 323.4445, 289.2]), '- Hz values: 440.000 323.445 289.200')
+        self.assertEqual(c.hz_string([440, 323.4445, 289.2]), '- Hz values: 440.000, 323.445, 289.200')
 
     def test_hz_string_bad_input(self):
         with self.assertRaises(TypeError), \
@@ -99,18 +102,8 @@ class TestOutputs(unittest.TestCase):
 
     def test_pitch_string_good_input(self):
         pitches = [
-            {
-                'pitch_class_name': 'An',
-                'octave': 3,
-                'cents_dev_direction': '+',
-                'cents_dev': 23.2
-            },
-            {
-                'pitch_class_name': 'D#',
-                'octave': 5,
-                'cents_dev_direction': '-',
-                'cents_dev': 43.1
-            }
+            c.Pitch('An', 3, '+', 23.2),
+            c.Pitch('D#', 5, '-', 43.1)
         ]
 
         self.assertEqual(c.pitch_string(pitches[0]), '- Pitch name: An3 + 23.2 c')
@@ -121,8 +114,8 @@ class TestOutputs(unittest.TestCase):
         self.assertEqual(c.midi_string(52.00, microtonal = True), '- MIDI value: 52.00')
 
     def test_midi_string_many_good_inputs(self):
-        self.assertEqual(c.midi_string([60.20, 43.9, 15], microtonal = False), '- MIDI values: 60 43 15')
-        self.assertEqual(c.midi_string([60.20, 43.9, 15], microtonal = True), '- MIDI values: 60.20 43.90 15.00')
+        self.assertEqual(c.midi_string([60.20, 43.9, 15], microtonal = False), '- MIDI values: 60, 43, 15')
+        self.assertEqual(c.midi_string([60.20, 43.9, 15], microtonal = True), '- MIDI values: 60.20, 43.90, 15.00')
 
     def test_midi_string_broken_input(self):
         with self.assertRaises(TypeError), \

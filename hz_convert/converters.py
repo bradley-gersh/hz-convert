@@ -34,13 +34,13 @@ def pitch_to_hz_loop(a4_hz):
 
         try:
             midi_notes = [pitch_str_to_midi(pitch) for pitch in pitches]
-            hz = [midi_to_hz(midi_note, a4_hz) for midi_note in midi_notes]
+            hz = [midi_to_hz(float(midi_note), a4_hz) for midi_note in midi_notes]
             microtonal = any([midi_note % 1 != 0 for midi_note in midi_notes])
         except Exception as e:
             print('[error] ' + e)
         else:
             print(midi_string(midi_notes, microtonal))
-            print(hz_string(hz) + '\n')
+            print(hz_string(hz))
 
 def hz_to_pitch_loop(a4_hz):
     print('Enter number as a decimal. Type X to quit.\n')
@@ -51,13 +51,12 @@ def hz_to_pitch_loop(a4_hz):
         if hz_in in ('X', 'x'):
             return True
 
-        # hzs = hz_in.split(' ')
+        hzs = hz_in.split(' ')
 
         try:
-            hz = float(hz_in)
-            midi_note = hz_to_midi(hz, a4_hz)
-            pitch_data = midi_to_pitch(midi_note)
-            microtonal = False if midi_note % 1 == 0 else True
+            midi_notes = [hz_to_midi(float(hz), a4_hz) for hz in hzs]
+            pitch_data = [midi_to_pitch(midi_note) for midi_note in midi_notes]
+            microtonal = any([midi_note % 1 != 0 for midi_note in midi_notes])
         except ValueError:
             print('[error] Not a decimal number. Type X to quit.\n')
             continue
@@ -65,7 +64,7 @@ def hz_to_pitch_loop(a4_hz):
             continue
         else:
             print(pitch_string(pitch_data))
-            print(midi_string(midi_note, microtonal) + '\n')
+            print(midi_string(midi_notes, microtonal))
 
 
 def midi_to_pitch_loop(a4_hz):
@@ -77,20 +76,19 @@ def midi_to_pitch_loop(a4_hz):
         if midi_in in ('X', 'x'):
             return True
 
-        # midis = midi_in.split(' ')
+        midi_notes = midi_in.split(' ')
 
         try:
-            midi_note = float(midi_in)
-            pitch_data = midi_to_pitch(midi_note)
-            hz = midi_to_hz(midi_note, a4_hz)
+            pitches = [midi_to_pitch(float(midi_note)) for midi_note in midi_notes]
+            hzs = [midi_to_hz(float(midi_note), a4_hz) for midi_note in midi_notes]
         except ValueError:
-            print('Not a decimal number. Type X to quit.\n')
+            print('Not a decimal number. Type X to quit.')
             continue
         except KeyError:
             continue
 
-        print(pitch_string(pitch_data))
-        print(hz_string(hz) + '\n')
+        print(pitch_string(pitches))
+        print(hz_string(hzs))
 
 # Conversion functions
 def pitch_str_to_midi(pitch_str):
@@ -162,12 +160,7 @@ def midi_to_pitch(midi_note):
     cents_dev = get_cents_dev(midi_note, rounded_pitch)
     octave = get_octave(midi_note)
 
-    return {
-        'pitch_class_name': pitch_class_name,
-        'octave': octave,
-        'cents_dev_direction': cents_dev_direction,
-        'cents_dev': cents_dev
-    }
+    return Pitch(pitch_class_name, octave, cents_dev_direction, cents_dev)
 
 def hz_to_midi(hz, a4_hz):
     return round(OCTAVE_DIV * (math.log(hz / a4_hz, 2)) + MIDI_REF, 3)
@@ -177,35 +170,53 @@ def midi_to_hz(midi_note, a4_hz):
     return round(a4_hz * (ST_HZ**distance), 3)
 
 # Output functions
-def pitch_string(pitch_data):
-    return (START_CHAR + 'Pitch name: ' + pitch_data['pitch_class_name'] + '%i ' % pitch_data['octave'] +
-       pitch_data['cents_dev_direction'] + ' %.1f c' % (pitch_data['cents_dev']))
+def pitch_string(pitches):
+    if type(pitches) is not list:
+        pitches = [pitches]
 
-def hz_string(hz):
-    if type(hz) is list:
+    if len(pitches) > 1:
+        prefix = 'Pitch names: '
+    else:
+        prefix = 'Pitch name: '
+
+    try:
+        out_str = START_CHAR + prefix + ', '.join([pitch.pitch_class_name + \
+            '%i ' % pitch.octave + pitch.cents_dev_direction + \
+            ' %.1f c' % pitch.cents_dev for pitch in pitches])
+    except TypeError:
+        raise TypeError('[error] Unable to process pitch string data.')
+    else:
+        return out_str
+
+def hz_string(hzs):
+    if type(hzs) is not list:
+        hzs = [hzs]
+
+    if len(hzs) > 1:
         prefix = 'Hz values: '
     else:
         prefix = 'Hz value: '
-        hz = [hz]
 
     try:
-        out_str = START_CHAR + prefix + ' '.join('%.3f' % note for note in hz)
+        out_str = START_CHAR + prefix + ', '.join('%.3f' % hz for hz in hzs)
     except TypeError:
         raise TypeError("[error] Hz values must be floats.")
     else:
         return out_str
 
-def midi_string(midi_note, microtonal = False):
-    if type(midi_note) is list:
+def midi_string(midi_notes, microtonal = False):
+    if type(midi_notes) is not list:
+        midi_notes = [midi_notes]
+
+    if len(midi_notes) > 1:
         prefix = 'MIDI values: '
     else:
         prefix = 'MIDI value: '
-        midi_note = [midi_note]
 
     num_format = '%.2f' if microtonal else '%i'
 
     try:
-        out_str = START_CHAR + prefix + ' '.join(num_format % note for note in midi_note)
+        out_str = START_CHAR + prefix + ', '.join(num_format % midi_note for midi_note in midi_notes)
     except TypeError:
         raise TypeError("[error] MIDI values must be numerical.")
     else:
