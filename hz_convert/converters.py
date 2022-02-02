@@ -232,57 +232,29 @@ def pitch_to_hz_loop(a4_hz):
         print('Hz values: ' + ' '.join('%.2f' % n for n in hz))
 
 def hz_to_pitch_loop(a4_hz):
-    print('A4 = 440 assumed. Enter number as a decimal. Type X to quit.')
+    print('Enter number as a decimal. Type X to quit.')
 
     while(True):
-        pitch = ''
-        midi_note = 0
-        pitch_class_number = 0
-        pitch_class_name = ''
-        cents = 0.0
-        octave = 0
-        hz = input('\nHz: ')
+        hz_in = input('\nHz: ')
 
-        if hz in ('X', 'x'):
+        if hz_in in ('X', 'x'):
             break
 
         try:
-            # Ideally, fix bug where cents can be 100, e.g. C#4 + 100 c (which should read Dn4 + 0.0 c).
-            hz = float(hz)
-            midi_note = 12 * (math.log(hz/440.0, 2)) + 69
-            print('MIDI value: %.3f' % midi_note)
-            pitch_class = math.floor(midi_note) % 12
-            if pitch_class == 0:
-                pitch_class_name = 'Cn'
-            elif pitch_class == 1:
-                pitch_class_name = 'C#'
-            elif pitch_class == 2:
-                pitch_class_name = 'Dn'
-            elif pitch_class == 3:
-                pitch_class_name = 'Eb'
-            elif pitch_class == 4:
-                pitch_class_name = 'En'
-            elif pitch_class == 5:
-                pitch_class_name = 'Fn'
-            elif pitch_class == 6:
-                pitch_class_name = 'F#'
-            elif pitch_class == 7:
-                pitch_class_name = 'Gn'
-            elif pitch_class == 8:
-                pitch_class_name = 'Ab'
-            elif pitch_class == 9:
-                pitch_class_name = 'An'
-            elif pitch_class == 10:
-                pitch_class_name = 'Bb'
-            elif pitch_class == 11:
-                pitch_class_name = 'Bn'
-            cents = 100 * (midi_note - math.floor(midi_note))
-            octave = math.floor(midi_note/12.0) - 1
-            print('Pitch name: ' + pitch_class_name +
-                  '%i + %.1f c' % (octave, cents))
-
+            hz = float(hz_in)
         except ValueError:
-            print('Not a decimal number.')
+            print('Not a decimal number. Type X to quit.')
+            continue
+
+        midi_note = hz_to_midi(hz, a4_hz)
+
+        # Ideally, fix bug where cents can be 100, e.g. C#4 + 100 c (which should read Dn4 + 0.0 c).
+        print('MIDI value: %.3f' % midi_note)
+
+        try:
+            print(midi_to_pitch_string(midi_note) + '\n')
+        except KeyError:
+            continue
 
 def midi_to_pitch_loop(a4_hz):
     print('Enter MIDI number as an integer or decimal number. Type X to quit.')
@@ -305,7 +277,8 @@ def midi_to_pitch_loop(a4_hz):
         except KeyError:
             continue
 
-def midi_to_pitch(midi_note: float):
+# Worker functions
+def midi_to_pitch(midi_note):
     cents_dev_direction = get_cents_dev_direction(midi_note)
     rounded_pitch = round(midi_note)
     pitch_class_name = assign_name(rounded_pitch % 12)
@@ -319,13 +292,18 @@ def midi_to_pitch(midi_note: float):
         'cents_dev': cents_dev
     }
 
-def midi_to_pitch_string(midi_note: float):
+def hz_to_midi(hz, a4_hz):
+    return OCTAVE_DIV * (math.log(hz/a4_hz, 2)) + MIDI_REF
+
+# Output functions
+def midi_to_pitch_string(midi_note):
     pitch_data = midi_to_pitch(midi_note)
 
     return ('Pitch name: ' + pitch_data['pitch_class_name'] + '%i ' % pitch_data['octave'] +
        pitch_data['cents_dev_direction'] + ' %.1f c' % (pitch_data['cents_dev']))
 
-def assign_name(pitch_class: int):
+# Helper functions
+def assign_name(pitch_class):
     pc_names = {
         0: 'Cn',
         1: 'C#',
