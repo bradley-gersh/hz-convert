@@ -5,7 +5,9 @@ from multiprocessing.sharedctypes import Value
 OCTAVE_DIV = 12
 ST_HZ = 2**(1.0/OCTAVE_DIV)
 MIDI_REF = 69 # An4
+START_CHAR = '- '
 
+# Interaction loops
 def pitch_to_hz_loop(a4_hz):
     print('A4 = %.3f Hz' % a4_hz)
     print('\nEnter a list of pitches in scientific pitch notation (separated by spaces) press ENTER. Format is pitch name (A-G), accidental (see next), and octave (an integer), all without spaces. Examples: Cn4, Bb8, F#4.\n\nAccidentals can be #, b, or n (natural). Double sharps and flats are indicated by x and d (a single-character version of double flat). Rational accidentals are indicated by a fraction before the accidental in parens, e.g. (1/4)#, (2/3)b. Accidentals MAY NOT BE OMITTED. e.g. B(3/4)#8.\n\nWARNING: Quarter tones are indicated by HALF accidentals. This is because accidentals themselves already embed semitones. Thus a quarter tone above Cn4 is C \'half sharp\', or C(1/2)#4.\n\nExample input: Cn4 D#6 B(1/2)b3')
@@ -242,19 +244,18 @@ def hz_to_pitch_loop(a4_hz):
 
         try:
             hz = float(hz_in)
+            midi_note = hz_to_midi(hz, a4_hz)
+            pitch_data = midi_to_pitch(midi_note)
         except ValueError:
             print('Not a decimal number. Type X to quit.')
             continue
-
-        midi_note = hz_to_midi(hz, a4_hz)
-
-        # Ideally, fix bug where cents can be 100, e.g. C#4 + 100 c (which should read Dn4 + 0.0 c).
-        print('MIDI value: %.3f' % midi_note)
-
-        try:
-            print(midi_to_pitch_string(midi_note) + '\n')
         except KeyError:
             continue
+
+        # Ideally, fix bug where cents can be 100, e.g. C#4 + 100 c (which should read Dn4 + 0.0 c).
+        print(pitch_string(pitch_data))
+        print(midi_string(midi_note) + '\n')
+
 
 def midi_to_pitch_loop(a4_hz):
     print('Enter MIDI number as an integer or decimal number. Type X to quit.')
@@ -267,17 +268,18 @@ def midi_to_pitch_loop(a4_hz):
 
         try:
             midi_note = float(midi_in)
+            pitch_data = midi_to_pitch(midi_note)
+            hz = midi_to_hz(midi_note, a4_hz)
         except ValueError:
             print('Not a decimal number. Type X to quit.')
             continue
-
-        try:
-            print(midi_to_pitch_string(midi_note))
-            print(midi_to_hz_string(midi_note, a4_hz) + '\n')
         except KeyError:
             continue
 
-# Worker functions
+        print(pitch_string(pitch_data))
+        print(hz_string(hz) + '\n')
+
+# Conversion functions
 def midi_to_pitch(midi_note):
     cents_dev_direction = get_cents_dev_direction(midi_note)
     rounded_pitch = round(midi_note)
@@ -293,14 +295,22 @@ def midi_to_pitch(midi_note):
     }
 
 def hz_to_midi(hz, a4_hz):
-    return OCTAVE_DIV * (math.log(hz/a4_hz, 2)) + MIDI_REF
+    return round(OCTAVE_DIV * (math.log(hz / a4_hz, 2)) + MIDI_REF, 3)
+
+def midi_to_hz(midi_note, a4_hz):
+    distance = midi_note - MIDI_REF
+    return round(a4_hz * (ST_HZ**distance), 3)
 
 # Output functions
-def midi_to_pitch_string(midi_note):
-    pitch_data = midi_to_pitch(midi_note)
-
-    return ('Pitch name: ' + pitch_data['pitch_class_name'] + '%i ' % pitch_data['octave'] +
+def pitch_string(pitch_data):
+    return (START_CHAR + 'Pitch name: ' + pitch_data['pitch_class_name'] + '%i ' % pitch_data['octave'] +
        pitch_data['cents_dev_direction'] + ' %.1f c' % (pitch_data['cents_dev']))
+
+def hz_string(hz):
+    return START_CHAR + 'Hz value: %.3f' % hz
+
+def midi_string(midi_note):
+    return START_CHAR + 'MIDI value: %.3f' % midi_note
 
 # Helper functions
 def assign_name(pitch_class):
@@ -333,11 +343,3 @@ def get_cents_dev(midi_note, pitch_class_number):
 
 def get_octave(midi_note):
     return math.floor(midi_note/12.0) - 1
-
-def midi_to_hz(midi_note, a4_hz):
-    distance = midi_note - MIDI_REF
-    return round(a4_hz * (ST_HZ**distance), 3)
-
-def midi_to_hz_string(midi_note, a4_hz):
-    hz = midi_to_hz(midi_note, a4_hz)
-    return 'Hz value: %.3f' % hz
