@@ -1,11 +1,19 @@
 import math
-from multiprocessing.sharedctypes import Value
+import re
+from dataclasses import dataclass
 
 # Constants
 OCTAVE_DIV = 12
 ST_HZ = 2**(1.0/OCTAVE_DIV)
 MIDI_REF = 69 # An4
 START_CHAR = '- '
+
+@dataclass
+class Pitch():
+    pitch_class_name: str
+    octave: int
+    cents_dev_direction: str
+    cents_dev: float
 
 # Interaction loops
 def pitch_to_hz_loop(a4_hz):
@@ -16,263 +24,67 @@ def pitch_to_hz_loop(a4_hz):
 
     print('\nType X to quit.')
 
-    note_names = set(['A', 'B', 'C', 'D', 'E', 'F', 'G'])
-    accids = set(['n', 'd', 'b', '#', 'x'])
-
-    debug = False
-    debug_switch = input('Type D here for debug messages:')
-    if debug_switch in ('D', 'd'):
-        debug = True
-
     while True:
-        err = False
-        part_of_pitch = 1
-        note_name = ''
-        accid = ''
-        is_rational = False
-        is_rational_used = False
-        is_rational_ever_used = False
-        in_numerator = False
-        in_denominator = False
-        is_neg_octave = False
-        numerator = 0
-        denominator = 1
-        ratio = 0.0
-        octave = 0
-        pitch = input('\nPitches: ')
+        pitch_in = input('\n> Pitches: ')
 
-        # Parse inputted note
-        if pitch in ('X', 'x'):
-            break
-        curr_pitch = 0
-        midi_note = []
-        distance = []
-        hz = []
-        if debug:
-            print('Parsing character by character ...')
-        for c in pitch:
-            if debug:
-                print('char = %s, curr_pitch = %i, part_of_pitch = %i' %
-                      (c, curr_pitch, part_of_pitch))
+        if pitch_in in ('X', 'x'):
+            return True
 
-            if c == '':
-                break
-            if c == ' ':
-                if debug:
-                    print('Advancing to next note.')
-                curr_pitch += 1
-                part_of_pitch = 0
+        pitches = pitch_in.split(' ')
 
-            if part_of_pitch == 3:
-                if c == '-':
-                    is_neg_octave = True
-                else:
-                    try:
-                        octave = int(('%i' + c) % octave)
-                        if debug:
-                            print('Octave assigned')
-                    except ValueError:
-                        print('Invalid format err 1')
-                        err = True
-                        break
-
-                if err == True:
-                    if debug:
-                        print('Something just went wrong.')
-                if err == False:
-                    ratio = float(numerator) / denominator
-                    if is_neg_octave:
-                        octave = octave * (-1)
-                    if debug:
-                        print('--- Note name: ' + note_name + ' Accid: ' +
-                              accid + ' Accid Ratio: %.3f Octave: %i' % (ratio, octave))
-
-                    # Convert inputted note to MIDI note (possibly a rational number)
-                    # C-1 = 0, C4 = 60, A4 = 69
-                    diatonic_class = 0
-                    pitch_class = 0
-                    accid_value = 0.0
-                    if note_name == 'C':
-                        diatonic_class = 0
-                    if note_name == 'D':
-                        diatonic_class = 2
-                    if note_name == 'E':
-                        diatonic_class = 4
-                    if note_name == 'F':
-                        diatonic_class = 5
-                    if note_name == 'G':
-                        diatonic_class = 7
-                    if note_name == 'A':
-                        diatonic_class = 9
-                    if note_name == 'B':
-                        diatonic_class = 11
-                    if accid == 'd':
-                        accid_value = -2
-                    if accid == 'b':
-                        accid_value = -1
-                    if accid == 'n':
-                        accid_value = 0
-                    if accid == '#':
-                        accid_value = 1
-                    if accid == 'x':
-                        accid_value = 2
-                    if is_rational_used:
-                        accid_value = accid_value * ratio
-
-                    midi_note.append(
-                        (diatonic_class + 12*(octave+1)) + accid_value)
-                    # Convert MIDI note to Hz
-                    # A4 = 69. Count semitones from A4.
-                    midi_ref = 69  # The MIDI value for A4
-                    distance.append(midi_note[curr_pitch] - midi_ref)
-                    st_hz = 2**(1.0/12)
-                    hz.append(a4_hz * (st_hz**(distance[curr_pitch])))
-
-            if part_of_pitch == 2:
-                if debug:
-                    print('Detecting accidental ...')
-                accid_success = False
-                if c == ')':
-                    is_rational = False
-                    if debug:
-                        print('Rational flag off')
-                    accid_success = True
-                if is_rational == False and c in accids:
-                    if is_rational_used == False:
-                        accid = c
-                        if debug:
-                            print('Accidental assigned')
-                        part_of_pitch += 1
-                        accid_success = True
-                    if is_rational_used == True:
-                        if c in set(['n', 'd', 'x']):
-                            print(
-                                'Error: Only b and # accidentals are valid with rational accidentals.')
-                            err = True
-                            break
-                        else:
-                            accid = c
-                            if debug:
-                                print('Accidental assigned')
-                            part_of_pitch += 1
-                            accid_success = True
-                if is_rational:
-                    if in_denominator:
-                        try:
-                            denominator = int(c)
-                            if debug:
-                                print('Denominator assigned')
-                            in_denominator = False
-                            accid_success = True
-                        except ValueError:
-                            print('Invalid format err 2')
-                            err = True
-                            break
-                    if c == '/':
-                        in_numerator = False
-                        in_denominator = True
-                        accid_success = True
-                    if in_numerator:
-                        try:
-                            numerator = int(c)
-                            if debug:
-                                print('Numerator assigned')
-                            accid_success = True
-                        except ValueError:
-                            print('Invalid format err 3')
-                            err = True
-                            break
-                if c == '(':
-                    is_rational = True
-                    is_rational_used = True
-                    in_numerator = True
-                    if debug:
-                        print('Rational flag on.')
-                    accid_success = True
-                if accid_success == False:
-                    print('Invalid format err 4')
-                    err = True
-                    break
-
-            if part_of_pitch == 1:
-                if c in note_names:
-                    note_name = c
-                    if debug:
-                        print('Note name assigned.')
-                    part_of_pitch += 1
-                else:
-                    print('Invalid format err 5')
-                    err = True
-                    break
-
-            if part_of_pitch == 0:
-                if is_rational_used:
-                    is_rational_ever_used = True
-                err = False
-                part_of_pitch = 1
-                note_name = ''
-                accid = ''
-                is_rational = False
-                is_rational_used = False
-                in_numerator = False
-                in_denominator = False
-                is_neg_octave = False
-                numerator = 0
-                denominator = 1
-                ratio = 0.0
-                octave = 0
-
-        if is_rational_ever_used:
-            # This syntax lifted from https://stackoverflow.com/questions/1566936/easy-pretty-printing-of-floats-in-python
-            print('MIDI values: ' + ' '.join('%.2f' % n for n in midi_note))
-            if debug:
-                print('Semitone distances: ' +
-                      ' '.join('%.2f' % n for n in distance))
+        try:
+            midi_notes = [pitch_str_to_midi(pitch) for pitch in pitches]
+            hz = [midi_to_hz(midi_note, a4_hz) for midi_note in midi_notes]
+            microtonal = any([midi_note % 1 != 0 for midi_note in midi_notes])
+        except Exception as e:
+            print('[error] ' + e)
         else:
-            print('MIDI values: ' + ' '.join('%i' % n for n in midi_note))
-            if debug:
-                print('Semitone distances: ' +
-                      ' '.join('%i' % n for n in distance))
-        print('Hz values: ' + ' '.join('%.2f' % n for n in hz))
+            print(midi_string(midi_notes, microtonal))
+            print(hz_string(hz) + '\n')
 
 def hz_to_pitch_loop(a4_hz):
-    print('Enter number as a decimal. Type X to quit.')
+    print('Enter number as a decimal. Type X to quit.\n')
 
     while(True):
-        hz_in = input('\nHz: ')
+        hz_in = input('\n> Hz: ')
 
         if hz_in in ('X', 'x'):
             return True
+
+        # hzs = hz_in.split(' ')
 
         try:
             hz = float(hz_in)
             midi_note = hz_to_midi(hz, a4_hz)
             pitch_data = midi_to_pitch(midi_note)
+            microtonal = False if midi_note % 1 == 0 else True
         except ValueError:
-            print('Not a decimal number. Type X to quit.')
+            print('[error] Not a decimal number. Type X to quit.\n')
             continue
         except KeyError:
             continue
+        else:
+            print(pitch_string(pitch_data))
+            print(midi_string(midi_note, microtonal) + '\n')
 
-        # Ideally, fix bug where cents can be 100, e.g. C#4 + 100 c (which should read Dn4 + 0.0 c).
-        print(pitch_string(pitch_data))
-        print(midi_string(midi_note) + '\n')
 
 def midi_to_pitch_loop(a4_hz):
-    print('Enter MIDI number as an integer or decimal number. Type X to quit.')
+    print('Enter MIDI number as an integer or decimal number. Type X to quit.\n')
 
     while(True):
-        midi_in = input('\nMIDI: ')
+        midi_in = input('\n> MIDI: ')
 
-        if midi_in.lower() == 'x':
+        if midi_in in ('X', 'x'):
             return True
+
+        # midis = midi_in.split(' ')
 
         try:
             midi_note = float(midi_in)
             pitch_data = midi_to_pitch(midi_note)
             hz = midi_to_hz(midi_note, a4_hz)
         except ValueError:
-            print('Not a decimal number. Type X to quit.')
+            print('Not a decimal number. Type X to quit.\n')
             continue
         except KeyError:
             continue
@@ -281,6 +93,68 @@ def midi_to_pitch_loop(a4_hz):
         print(hz_string(hz) + '\n')
 
 # Conversion functions
+def pitch_str_to_midi(pitch_str):
+    midi = -1
+
+    pitch_name_format = '([a-gA-G])'
+    microtone_format = '(\(([0-9]+)\/([0-9]+)\))'
+    accidental_format = '([nb#xd])'
+    octave_format = '(-?[0-9]+)'
+
+    pitch_format = pitch_name_format + microtone_format + '?' + \
+                   accidental_format + '?' + octave_format
+
+    match = re.fullmatch(pitch_format, pitch_str)
+
+    if not match:
+        raise ValueError('[error] Invalid pitch format. Refer to instructions.\n')
+
+    (pitch_name, numerator, denominator, accidental, octave) = match.group(1, 3, 4, 5, 6)
+
+    if numerator is not None and denominator is not None:
+        cents_dev = microtone_to_cents_dev(accidental, numerator, denominator)
+    else:
+        cents_dev = 0
+
+    pitch = Pitch(pitch_name, int(octave), '+', float(cents_dev))
+    midi = pitch_obj_to_midi(pitch)
+
+    return midi
+
+def microtone_to_cents_dev(accidental, numerator, denominator):
+    if (accidental not in ('b', '#')):
+        raise ValueError('[error] Only # and b are possible with microtones.')
+    ratio = float(numerator) / float(denominator)
+    accidental_value = accidental_to_value(accidental) * ratio
+
+    return accidental_value * 100
+
+def accidental_to_value(accidental):
+    accidental_values = {
+        'd': -2,
+        'b': -1,
+        'n': 0,
+        '#': 1,
+        'x': 2
+    }
+
+    if accidental == '':
+        accidental = 'n'
+
+    try:
+        accidental_value = accidental_values[accidental]
+    except KeyError:
+        raise KeyError('[error] Invalid accidental type.\n')
+    else:
+        return accidental_value
+
+def pitch_obj_to_midi(pitch):
+    diatonic_class = assign_diatonic_pc(pitch.pitch_class_name)
+    midi_note = round(diatonic_class + OCTAVE_DIV * (pitch.octave + 1) + pitch.cents_dev / 100, 2)
+
+    return midi_note
+
+
 def midi_to_pitch(midi_note):
     cents_dev_direction = get_cents_dev_direction(midi_note)
     rounded_pitch = round(midi_note)
@@ -308,13 +182,34 @@ def pitch_string(pitch_data):
        pitch_data['cents_dev_direction'] + ' %.1f c' % (pitch_data['cents_dev']))
 
 def hz_string(hz):
-    if type(hz) is not float:
-        raise TypeError("Hz must be a float")
+    if type(hz) is list:
+        prefix = 'Hz values: '
+    else:
+        prefix = 'Hz value: '
+        hz = [hz]
 
-    return START_CHAR + 'Hz value: %.3f' % hz
+    try:
+        out_str = START_CHAR + prefix + ' '.join('%.3f' % note for note in hz)
+    except TypeError:
+        raise TypeError("[error] Hz values must be floats.")
+    else:
+        return out_str
 
-def midi_string(midi_note):
-    return START_CHAR + 'MIDI value: %.3f' % midi_note
+def midi_string(midi_note, microtonal = False):
+    if type(midi_note) is list:
+        prefix = 'MIDI values: '
+    else:
+        prefix = 'MIDI value: '
+        midi_note = [midi_note]
+
+    num_format = '%.2f' if microtonal else '%i'
+
+    try:
+        out_str = START_CHAR + prefix + ' '.join(num_format % note for note in midi_note)
+    except TypeError:
+        raise TypeError("[error] MIDI values must be numerical.")
+    else:
+        return out_str
 
 # Helper functions
 def assign_name(pitch_class):
@@ -333,10 +228,30 @@ def assign_name(pitch_class):
         11: 'Bn'
     }
 
-    if pitch_class < 0 or pitch_class > 11:
+    try:
+        pc_name = pc_names[pitch_class]
+    except KeyError:
         raise KeyError('[BUG] Invalid pitch class number')
+    else:
+        return pc_name
 
-    return pc_names[pitch_class]
+def assign_diatonic_pc(name):
+    diatonic_pc_numbers = {
+        'C': 0,
+        'D': 2,
+        'E': 4,
+        'F': 5,
+        'G': 7,
+        'A': 9,
+        'B': 11
+    }
+
+    try:
+        diatonic_pc_number = diatonic_pc_numbers[name.upper()]
+    except KeyError:
+        raise KeyError('[BUG] Invalid pitch class name')
+    else:
+        return diatonic_pc_number
 
 def get_cents_dev_direction(midi_note):
     return '+' if (midi_note % 1) <= 0.5 else '-'
