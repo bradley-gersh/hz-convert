@@ -27,7 +27,7 @@ class TestPitchToHzLoop(unittest.TestCase):
                 mock.patch('sys.stdout', new = StringIO()) as mock_stdout:
             self.assertTrue(c.pitch_to_hz_loop(A4_HZ))
             out = mock_stdout.getvalue().strip().split('\n')[-1]
-            self.assertEqual(out, '[error] Syntax error in parsing pitch.')
+            self.assertEqual(out, '[error] Syntax error: Invalid pitch format. Refer to instructions.')
 
 class TestHzToPitchLoop(unittest.TestCase):
     def test_exits_normally(self):
@@ -50,7 +50,7 @@ class TestHzToPitchLoop(unittest.TestCase):
                 mock.patch('sys.stdout', new = StringIO()) as mock_stdout:
             self.assertTrue(c.midi_to_pitch_loop(A4_HZ))
             out = mock_stdout.getvalue().strip().split('\n')[-1]
-            self.assertEqual(out, '[error] Not a decimal number. Type X to quit.')
+            self.assertEqual(out, '[error] Syntax error: Not a numerical input.')
 
 class TestPitchToMidi(unittest.TestCase):
     # Needs mocks for microtone_to_cents_dev
@@ -102,7 +102,7 @@ class TestMidiToPitchLoop(unittest.TestCase):
                 mock.patch('sys.stdout', new = StringIO()) as mock_stdout:
             self.assertTrue(c.midi_to_pitch_loop(A4_HZ))
             out = mock_stdout.getvalue().strip().split('\n')[-1]
-            self.assertEqual(out, '[error] Not a decimal number. Type X to quit.')
+            self.assertEqual(out, '[error] Syntax error: Not a numerical input.')
 
 class TestMidiToPitch(unittest.TestCase):
     def test_good_input(self):

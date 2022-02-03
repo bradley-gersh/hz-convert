@@ -39,7 +39,7 @@ def pitch_to_hz_loop(a4_hz):
             hz = [midi_to_hz(float(midi_note), a4_hz) for midi_note in midi_notes]
             microtonal = any([midi_note % 1 != 0 for midi_note in midi_notes])
         except Exception as e:
-            print('[error] Syntax error in parsing pitch: ', end = '')
+            print('[error] Syntax error: ', end = '')
             print(e)
         else:
             print(midi_string(midi_notes, microtonal))
@@ -82,12 +82,14 @@ def midi_to_pitch_loop(a4_hz):
         try:
             pitches = [midi_to_pitch(float(midi_note)) for midi_note in midi_notes]
             hzs = [midi_to_hz(float(midi_note), a4_hz) for midi_note in midi_notes]
+        except ValueError:
+            print('[error] Syntax error: Not a numerical input.')
         except Exception as e:
             print('[error] Syntax error: ', end='')
             print(e)
-
-        print(pitch_string(pitches))
-        print(hz_string(hzs))
+        else:
+            print(pitch_string(pitches))
+            print(hz_string(hzs))
 
 # Conversion functions
 def pitch_str_to_midi(pitch_str):
