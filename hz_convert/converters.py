@@ -10,9 +10,10 @@ START_CHAR = '- '
 
 @dataclass
 class Pitch():
-    pitch_class_name: str
+    diatonic_pc: str
+    accidental: str
     octave: int
-    cents_dev_direction: str
+    # cents_dev_direction: str
     cents_dev: float
 
 # Interaction loops
@@ -112,34 +113,39 @@ def pitch_str_to_pitch_obj(pitch_str):
 
     (pitch_name, numerator, denominator, accidental, octave) = match.group(1, 3, 4, 5, 6)
 
-    cents_dev = accidental_to_cents_dev(accidental, numerator, denominator)
+    octave = int(octave)
 
-    return Pitch(pitch_name, int(octave), '+', float(cents_dev))
+    if numerator is None and denominator is None:
+        cents_dev = 0
+    else:
+        accidental, cents_dev = compute_cents_dev(accidental, numerator, denominator)
+
+    return Pitch(pitch_name, accidental, octave, cents_dev)
 
 def pitch_obj_to_midi(pitch):
-    diatonic_class = assign_diatonic_pc(pitch.pitch_class_name[0])
+    diatonic_class = assign_diatonic_pc(pitch.diatonic_pc)
 
-    dev_modifier = accidental_to_cents_dev(pitch.pitch_class_name[1], None, None) \
-                    if len(pitch.pitch_class_name) > 1 \
-                    else 0
+    # Account for the accidental
+    total_cents_dev = pitch.cents_dev + accidental_to_cents_dev(pitch.accidental)
 
-    cents_dev = pitch.cents_dev + dev_modifier
-
-    midi_note = round(diatonic_class + OCTAVE_DIV * (pitch.octave + 1) + cents_dev / 100, 2)
+    midi_note = round(diatonic_class + OCTAVE_DIV * (pitch.octave + 1) + total_cents_dev / 100, 2)
+    check_midi_range(midi_note)
 
     return midi_note
 
 def midi_to_pitch(midi_note):
-    cents_dev_direction = get_cents_dev_direction(midi_note)
+    # cents_dev_direction = get_cents_dev_direction(midi_note)
     rounded_pitch = round(midi_note)
-    pitch_class_name = assign_name(rounded_pitch % 12)
+    (diatonic_pc, accidental) = assign_name(rounded_pitch % 12)
     cents_dev = get_cents_dev(midi_note, rounded_pitch)
     octave = get_octave(midi_note)
 
-    return Pitch(pitch_class_name, octave, cents_dev_direction, cents_dev)
+    return Pitch(diatonic_pc, accidental, octave, cents_dev)
 
 def hz_to_midi(hz, a4_hz):
-    return round(OCTAVE_DIV * (math.log(hz / a4_hz, 2)) + MIDI_REF, 3)
+    midi_note = round(OCTAVE_DIV * (math.log(hz / a4_hz, 2)) + MIDI_REF, 3)
+    check_midi_range(midi_note)
+    return midi_note
 
 def midi_to_hz(midi_note, a4_hz):
     distance = midi_note - MIDI_REF
@@ -156,9 +162,8 @@ def pitch_string(pitches):
         prefix = 'Pitch name: '
 
     try:
-        out_str = START_CHAR + prefix + ', '.join([pitch.pitch_class_name + \
-            '%i ' % pitch.octave + pitch.cents_dev_direction + \
-            ' %.1f c' % pitch.cents_dev for pitch in pitches])
+        out_str = START_CHAR + prefix + ', '.join([pitch.diatonic_pc + pitch.accidental + \
+            '%i ' % pitch.octave + '(%.1f c)' % pitch.cents_dev for pitch in pitches])
     except TypeError:
         raise TypeError('Unable to process pitch string data.')
     else:
@@ -201,18 +206,18 @@ def midi_string(midi_notes, microtonal = False):
 # Helper functions
 def assign_name(pitch_class):
     pc_names = {
-        0: 'Cn',
-        1: 'C#',
-        2: 'Dn',
-        3: 'Eb',
-        4: 'En',
-        5: 'Fn',
-        6: 'F#',
-        7: 'Gn',
-        8: 'G#',
-        9: 'An',
-        10: 'Bb',
-        11: 'Bn'
+        0: ('C', ''),
+        1: ('C', '#'),
+        2: ('D', ''),
+        3: ('E', 'b'),
+        4: ('E', ''),
+        5: ('F', ''),
+        6: ('F', '#'),
+        7: ('G', ''),
+        8: ('G', '#'),
+        9: ('A', ''),
+        10: ('B', 'b'),
+        11: ('B', '')
     }
 
     try:
@@ -242,7 +247,7 @@ def assign_diatonic_pc(name):
     else:
         return diatonic_pc_number
 
-def accidental_to_value(accidental):
+def accidental_to_cents_dev(accidental):
     accidental_values = {
         'd': -2,
         'b': -1,
@@ -251,7 +256,7 @@ def accidental_to_value(accidental):
         'x': 2
     }
 
-    if accidental is None:
+    if accidental is None or accidental == '':
         accidental = 'n'
 
     try:
@@ -259,29 +264,37 @@ def accidental_to_value(accidental):
     except KeyError:
         raise KeyError('Invalid accidental type.\n')
     else:
-        return accidental_value
+        return 100 * accidental_value
 
-def accidental_to_cents_dev(accidental, numerator, denominator):
-    accidental_value = accidental_to_value(accidental)
+def compute_cents_dev(accidental, numerator, denominator):
+    if numerator is None and denominator is None:
+        return (accidental, 0)
 
-    # If we have a microtone
-    if numerator is not None and denominator is not None:
-        if (accidental not in ('b', '#')):
-            raise ValueError('Only # and b are possible with microtone (fraction) notation.')
-        try:
-            ratio = float(numerator) / float(denominator)
-        except ValueError:
-            raise ValueError('Numerator or denominator not a number.')
-        else:
-            accidental_value *= ratio
+    if accidental == 'b':
+        accidental_value = -1
+    elif accidental == '#':
+        accidental_value = 1
+    else:
+        raise ValueError('Only # and b are allowed with microtone (fraction) notation.')
 
-    return round(accidental_value * 100, 3)
+    try:
+        ratio = float(numerator) / float(denominator)
+    except ValueError:
+        raise ValueError('Numerator or denominator not a number.')
+    else:
+        accidental_value *= ratio
+
+    return ('', round(accidental_value * 100, 3))
 
 def get_cents_dev_direction(midi_note):
     return '+' if (midi_note % 1) <= 0.5 else '-'
 
 def get_cents_dev(midi_note, pitch_class_number):
-    return round(100 * abs(midi_note - pitch_class_number), 1)
+    return round(100 * (midi_note - pitch_class_number), 1)
 
 def get_octave(midi_note):
     return math.floor(midi_note/12.0) - 1
+
+def check_midi_range(midi_note):
+    if midi_note < 0 or midi_note > 127:
+        print('[warning] MIDI note outside of the defined range 0-127.')
