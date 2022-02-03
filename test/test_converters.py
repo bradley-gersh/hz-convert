@@ -4,51 +4,75 @@ from io import StringIO
 
 import hz_convert.converters as c
 
-A4_HZ = 440.0
+STD_A4 = 440.0
+NEW_A4 = 423.519
+
+def compare_pitch_objs(pitch1, pitch2):
+    return ((pitch1.diatonic_pc == pitch2.diatonic_pc) and \
+        (pitch1.accidental == pitch2.accidental) and \
+        (pitch1.octave == pitch2.octave) and \
+        (pitch1.cents_dev == pitch2.cents_dev))
 
 # The three loops have integration tests without mocking subroutines
 class TestPitchToHzLoop(unittest.TestCase):
     def tests_exits_normally(self):
         with mock.patch('builtins.input', side_effect=['X']), \
                 mock.patch('sys.stdout', new = StringIO()) as mock_stdout:
-            self.assertTrue(c.pitch_to_hz_loop(A4_HZ))
+            self.assertTrue(c.pitch_to_hz_loop(STD_A4))
 
-    def test_good_input(self):
+    def test_good_input_standard_a4(self):
         with mock.patch('builtins.input', side_effect=['An4', 'Cn4 B(1/2)b0', 'X']), \
                 mock.patch('sys.stdout', new = StringIO()) as mock_stdout:
-            self.assertTrue(c.pitch_to_hz_loop(A4_HZ))
+            self.assertTrue(c.pitch_to_hz_loop(STD_A4))
             out = mock_stdout.getvalue().strip().split('\n')
             out = [line for line in out if len(line) > 0 and line[0] == '-']
             self.assertListEqual(out[0:2], ['- MIDI value: 69', '- Hz value: 440.00'])
             self.assertListEqual(out[2:4], ['- MIDI values: 60.00, 22.50', '- Hz values: 261.63, 29.99'])
 
+    def test_good_input_new_a4(self):
+        with mock.patch('builtins.input', side_effect=['An4', 'Cn4 B(1/2)b0', 'X']), \
+                mock.patch('sys.stdout', new = StringIO()) as mock_stdout:
+            self.assertTrue(c.pitch_to_hz_loop(NEW_A4))
+            out = mock_stdout.getvalue().strip().split('\n')
+            out = [line for line in out if len(line) > 0 and line[0] == '-']
+            self.assertListEqual(out[0:2], ['- MIDI value: 69', '- Hz value: 423.52'])
+            self.assertListEqual(out[2:4], ['- MIDI values: 60.00, 22.50', '- Hz values: 251.83, 28.87'])
+
     def test_broken_input(self):
         with mock.patch('builtins.input', side_effect=['not a number', 'x']), \
                 mock.patch('sys.stdout', new = StringIO()) as mock_stdout:
-            self.assertTrue(c.pitch_to_hz_loop(A4_HZ))
+            self.assertTrue(c.pitch_to_hz_loop(STD_A4))
             out = mock_stdout.getvalue().strip().split('\n')[-1]
-            self.assertEqual(out, '[error] Syntax error: Invalid pitch format. Refer to instructions.')
+            self.assertEqual(out, "[error] Syntax error: Invalid pitch format. At minimum, a pitch and octave (e.g. 'C4', 'Bb3') are required. Refer to instructions.")
 
 class TestHzToPitchLoop(unittest.TestCase):
     def test_exits_normally(self):
         with mock.patch('builtins.input', side_effect=['X']), \
                 mock.patch('sys.stdout', new = StringIO()) as mock_stdout:
-            self.assertTrue(c.hz_to_pitch_loop(A4_HZ))
+            self.assertTrue(c.hz_to_pitch_loop(STD_A4))
 
-    def test_good_input(self):
-        with mock.patch('builtins.input', side_effect=['440.0003', '261.62559', '29.989', 'X']), \
+    def test_good_input_standard_a4(self):
+        with mock.patch('builtins.input', side_effect=['440.0003', '261.62559 29.989', 'X']), \
                 mock.patch('sys.stdout', new = StringIO()) as mock_stdout:
-            self.assertTrue(c.hz_to_pitch_loop(A4_HZ))
+            self.assertTrue(c.hz_to_pitch_loop(STD_A4))
             out = mock_stdout.getvalue().strip().split('\n')
             out = [line for line in out if len(line) > 0 and line[0] == '-']
-            self.assertListEqual(out[0:2], ['- Pitch name: A4 (0.0 c)', '- MIDI value: 69'])
-            self.assertListEqual(out[2:4], ['- Pitch name: C4 (0.0 c)', '- MIDI value: 60'])
-            self.assertListEqual(out[4:6], ['- Pitch name: Bb0 (50.0 c)', '- MIDI value: 22.50'])
+            self.assertListEqual(out[0:2], ['- Pitch name: A4 (+0.0 c)', '- MIDI value: 69'])
+            self.assertListEqual(out[2:4], ['- Pitch names: C4 (+0.0 c), Bb0 (+50.0 c)', '- MIDI values: 60.00, 22.50'])
+
+    def test_good_input_new_a4(self):
+        with mock.patch('builtins.input', side_effect=['440.0003', '261.62559 29.989', 'X']), \
+                mock.patch('sys.stdout', new = StringIO()) as mock_stdout:
+            self.assertTrue(c.hz_to_pitch_loop(NEW_A4))
+            out = mock_stdout.getvalue().strip().split('\n')
+            out = [line for line in out if len(line) > 0 and line[0] == '-']
+            self.assertListEqual(out[0:2], ['- Pitch name: Bb4 (-33.9 c)', '- MIDI value: 69.66'])
+            self.assertListEqual(out[2:4], ['- Pitch names: C#4 (-33.9 c), B0 (+16.1 c)', '- MIDI values: 60.66, 23.16'])
 
     def test_broken_input(self):
         with mock.patch('builtins.input', side_effect=['not a number', 'x']), \
                 mock.patch('sys.stdout', new = StringIO()) as mock_stdout:
-            self.assertTrue(c.midi_to_pitch_loop(A4_HZ))
+            self.assertTrue(c.midi_to_pitch_loop(STD_A4))
             out = mock_stdout.getvalue().strip().split('\n')[-1]
             self.assertEqual(out, '[error] Syntax error: Not a numerical input.')
 
@@ -107,37 +131,115 @@ class TestPitchObjToMidi(unittest.TestCase):
             self.assertListEqual([c.pitch_obj_to_midi(pitch) for pitch in pitch_objs], [-12, 132])
 
 class TestPitchStrToPitchObj(unittest.TestCase):
-    # needs a mock
-    pass
+    def test_handles_good_chromatic_input(self):
+        with mock.patch('hz_convert.converters.compute_cents_dev', side_effect = [
+            ('', 0), ('', 0), ('', 0), ('', 0), ('', 0)
+        ]):
+            pitch_strs = ['Cn3', 'C3', 'Bb2', 'Ex-2', 'Gd200']
+            expected_objs = [
+                c.Pitch('C', 'n', 3, 0),
+                c.Pitch('C', '', 3, 0),
+                c.Pitch('B', 'b', 2, 0),
+                c.Pitch('E', 'x', -2, 0),
+                c.Pitch('G', 'd', 200, 0),
+            ]
+            computed_objs = [c.pitch_str_to_pitch_obj(pitch_str) for pitch_str in pitch_strs]
+            comparison = [compare_pitch_objs(computed_obj, expected_obj) for computed_obj, expected_obj in zip(computed_objs, expected_objs)]
 
-class TestHzToMidi(unittest.TestCase):
-    def test_converts_correctly(self):
+            self.assertListEqual(comparison, [True, True, True, True, True])
+
+    def test_handles_good_microtone_input(self):
+        with mock.patch('hz_convert.converters.compute_cents_dev', side_effect = [ \
+            ('', 33.333), ('', -62.500), ('', 260.000) \
+        ]):
+            pitch_strs = ['C(1/3)#3', 'D(5/8)b-1', 'B(13/5)#-5']
+            expected_objs = [
+                c.Pitch('C', '', 3, 33.333),
+                c.Pitch('D', '', -1, -62.500),
+                c.Pitch('B', '', -5, 260.000),
+            ]
+            computed_objs = [c.pitch_str_to_pitch_obj(pitch_str) for pitch_str in pitch_strs]
+            comparison = [compare_pitch_objs(computed_obj, expected_obj) for computed_obj, expected_obj in zip(computed_objs, expected_objs)]
+
+            self.assertListEqual(comparison, [True, True, True])
+
+    def test_handles_broken_input(self):
+        with self.assertRaisesRegex(ValueError, '^Invalid pitch'):
+            c.pitch_str_to_pitch_obj('C')
+
+        with self.assertRaisesRegex(ValueError, '^Invalid pitch'):
+            c.pitch_str_to_pitch_obj('5')
+
+        with self.assertRaisesRegex(ValueError, '^Invalid pitch'):
+            c.pitch_str_to_pitch_obj('C(1/3)5')
+
+        with self.assertRaisesRegex(ValueError, '^Invalid pitch'):
+            c.pitch_str_to_pitch_obj('D(1/3)#')
+
+        with self.assertRaisesRegex(ValueError, '^Invalid pitch'):
+            c.pitch_str_to_pitch_obj('C#(1/3)5')
+
+        with self.assertRaisesRegex(ValueError, '^Invalid pitch'):
+            c.pitch_str_to_pitch_obj('C(1/35#')
+
+        with self.assertRaisesRegex(ValueError, '^Invalid pitch'):
+            c.pitch_str_to_pitch_obj('C(/3)#5')
+
+class TestMidiHzConversions(unittest.TestCase):
+    def test_midi_to_hz_standard_tuning(self):
+        self.assertEqual(c.midi_to_hz(69, STD_A4), 440.0)
+        self.assertEqual(c.midi_to_hz(60, STD_A4), 261.626)
+        self.assertEqual(c.midi_to_hz(78.43, STD_A4), 758.599)
+
+    def test_midi_to_hz_custom_tuning(self):
+        self.assertEqual(c.midi_to_hz(69, NEW_A4), 423.519)
+        self.assertEqual(c.midi_to_hz(60, NEW_A4), 251.826)
+        self.assertEqual(c.midi_to_hz(78.43, NEW_A4), 730.184)
+
+    def test_hz_to_midi_standard_tuning(self):
         with mock.patch('hz_convert.converters.check_midi_range'):
-            self.assertEqual(c.hz_to_midi(440.0, 440.0), 69.0)
-            self.assertEqual(c.hz_to_midi(261.626, 440.0), 60.0)
-            self.assertEqual(c.hz_to_midi(443.0, 443.0), 69.0)
+            self.assertEqual(c.hz_to_midi(440.0, STD_A4), 69.0)
+            self.assertEqual(c.hz_to_midi(261.626, STD_A4), 60.0)
+            self.assertEqual(c.hz_to_midi(758.599, STD_A4), 78.43)
+
+    def test_hz_to_midi_custom_tuning(self):
+        with mock.patch('hz_convert.converters.check_midi_range'):
+            self.assertEqual(c.hz_to_midi(423.519, NEW_A4), 69.0)
+            self.assertEqual(c.hz_to_midi(251.826, NEW_A4), 60.0)
+            self.assertEqual(c.hz_to_midi(730.184, NEW_A4), 78.43)
 
 class TestMidiToPitchLoop(unittest.TestCase):
     def test_exits_normally(self):
         with mock.patch('builtins.input', side_effect=['X']), \
                 mock.patch('sys.stdout', new = StringIO()) as mock_stdout:
-            self.assertTrue(c.midi_to_pitch_loop(A4_HZ))
+            self.assertTrue(c.midi_to_pitch_loop(STD_A4))
 
-    def test_good_input(self):
-        with mock.patch('builtins.input', side_effect=['69', '22.5', 'X']), \
+    def test_good_input_standard_a4(self):
+        with mock.patch('builtins.input', side_effect=['69', '60 22.5', 'X']), \
                 mock.patch('sys.stdout', new = StringIO()) as mock_stdout:
-            self.assertTrue(c.midi_to_pitch_loop(A4_HZ))
+            self.assertTrue(c.midi_to_pitch_loop(STD_A4))
             out = mock_stdout.getvalue().strip().split('\n')
             out = [line for line in out if len(line) > 0 and line[0] == '-']
-            self.assertTrue('- Pitch name: A4 (0.0 c)' in out)
+            self.assertTrue('- Pitch name: A4 (+0.0 c)' in out)
             self.assertTrue('- Hz value: 440.00' in out)
-            self.assertTrue('- Pitch name: Bb0 (50.0 c)' in out)
-            self.assertTrue('- Hz value: 29.99' in out)
+            self.assertTrue('- Pitch names: C4 (+0.0 c), Bb0 (+50.0 c)' in out)
+            self.assertTrue('- Hz values: 261.63, 29.99' in out)
+
+    def test_good_input_new_a4(self):
+        with mock.patch('builtins.input', side_effect=['69', '60 22.5', 'X']), \
+                mock.patch('sys.stdout', new = StringIO()) as mock_stdout:
+            self.assertTrue(c.midi_to_pitch_loop(NEW_A4))
+            out = mock_stdout.getvalue().strip().split('\n')
+            out = [line for line in out if len(line) > 0 and line[0] == '-']
+            self.assertTrue('- Pitch name: A4 (+0.0 c)' in out)
+            self.assertTrue('- Hz value: 423.52' in out)
+            self.assertTrue('- Pitch names: C4 (+0.0 c), Bb0 (+50.0 c)' in out)
+            self.assertTrue('- Hz values: 251.83, 28.87' in out)
 
     def test_broken_input(self):
         with mock.patch('builtins.input', side_effect=['not a number', 'x']), \
                 mock.patch('sys.stdout', new = StringIO()) as mock_stdout:
-            self.assertTrue(c.midi_to_pitch_loop(A4_HZ))
+            self.assertTrue(c.midi_to_pitch_loop(STD_A4))
             out = mock_stdout.getvalue().strip().split('\n')[-1]
             self.assertEqual(out, '[error] Syntax error: Not a numerical input.')
 
@@ -183,7 +285,7 @@ class TestOutputs(unittest.TestCase):
             c.Pitch('D', '#', 5, -43.1)
         ]
 
-        self.assertEqual(c.pitch_string(pitches[0]), '- Pitch name: A3 (23.2 c)')
+        self.assertEqual(c.pitch_string(pitches[0]), '- Pitch name: A3 (+23.2 c)')
         self.assertEqual(c.pitch_string(pitches[1]), '- Pitch name: D#5 (-43.1 c)')
 
     def test_midi_string_one_good_input(self):
@@ -277,16 +379,9 @@ class TestMidiToPitchHelpers(unittest.TestCase):
         # Should round answer to 1 decimal place
         self.assertEqual(c.get_cents_dev(120.4232, 121), -57.7)
 
-    def test_midi_to_hz_normal_tuning(self):
-        self.assertEqual(c.midi_to_hz(69, 440.0), 440.0)
-        self.assertEqual(c.midi_to_hz(60, 440.0), 261.626)
-        self.assertEqual(c.midi_to_hz(78.43, 440.0), 758.599)
 
-    def test_midi_to_hz_different_tuning(self):
-        self.assertEqual(c.midi_to_hz(69, 423.519), 423.519)
-        self.assertEqual(c.midi_to_hz(60, 423.519), 251.826)
-        self.assertEqual(c.midi_to_hz(78.43, 423.519), 730.184)
 
 
 if __name__ == '__main__':
     unittest.main()
+

@@ -8,3 +8,7 @@ __pycache__/
 # PyPI build files
 build/
 *.egg-info
+
+# Test coverage data
+*coverage*
+htmlcov/

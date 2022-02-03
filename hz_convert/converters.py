@@ -18,7 +18,7 @@ class Pitch():
 # Interaction loops
 def pitch_to_hz_loop(a4_hz):
     print('A4 = %.2f Hz' % a4_hz)
-    print("\nEnter a list of pitches in scientific pitch notation (separated by spaces) press ENTER.\n\nFormat: Pitch name (A-G), then accidental (see next), then octave (an integer). Multiple pitches can be entered together, separated by spaces.")
+    print("\nEnter a list of pitches in scientific pitch notation separated by spaces.\n\nFormat: Pitch name (A-G), then accidental (see next), then octave (an integer).")
     print("\nExample inputs:\nC4\nBb8\nA2 F#4 D5")
     print("Valid accidentals: d (double flat), b (flat), n (natural, can be omitted), # (sharp), x (double sharp).")
     print("\nMicrotonal accidentals are indicated by a fraction before the accidental in parens, e.g. C(1/4)#, E(2/3)b.")
@@ -60,6 +60,8 @@ def hz_to_pitch_loop(a4_hz):
             midi_notes = [hz_to_midi(float(hz), a4_hz) for hz in hzs]
             pitch_data = [midi_to_pitch(midi_note) for midi_note in midi_notes]
             microtonal = any([midi_note % 1 != 0 for midi_note in midi_notes])
+        except ValueError:
+            print('[error] Syntax error: Not a numerical input.')
         except Exception as e:
             print('[error] Syntax error: ', end = '')
             print(e)
@@ -108,11 +110,17 @@ def pitch_str_to_pitch_obj(pitch_str):
     match = re.fullmatch(pitch_format, pitch_str)
 
     if not match:
-        raise ValueError('Invalid pitch format. Refer to instructions.\n')
+        raise ValueError("Invalid pitch format. At minimum, a pitch and octave (e.g. 'C4', 'Bb3') are required. Refer to instructions.\n")
 
     (pitch_name, numerator, denominator, accidental, octave) = match.group(1, 3, 4, 5, 6)
 
     octave = int(octave)
+
+    if accidental is None:
+        accidental = ''
+        if numerator is not None or denominator is not None:
+            raise ValueError("Invalid pitch format. If a fraction is used, then an accidental must be included.\n")
+
 
     if numerator is None and denominator is None:
         cents_dev = 0
@@ -160,8 +168,11 @@ def pitch_string(pitches):
         prefix = 'Pitch name: '
 
     try:
-        out_str = START_CHAR + prefix + ', '.join([pitch.diatonic_pc + pitch.accidental + \
-            '%i ' % pitch.octave + '(%.1f c)' % pitch.cents_dev for pitch in pitches])
+        out_str = START_CHAR + prefix + ', '.join([pitch.diatonic_pc + \
+            pitch.accidental + '%i ' % pitch.octave + '(' + \
+            ('+' if pitch.cents_dev >= 0 else '-') + \
+            '%.1f c)' % abs(pitch.cents_dev) \
+            for pitch in pitches])
     except TypeError:
         raise TypeError('Unable to process pitch string data.')
     else:
