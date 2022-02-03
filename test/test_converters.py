@@ -15,9 +15,9 @@ def compare_pitch_objs(pitch1, pitch2):
 
 # The three loops have integration tests without mocking subroutines
 class TestPitchToHzLoop(unittest.TestCase):
-    def tests_exits_normally(self):
+    def test_exits_normally(self):
         with mock.patch('builtins.input', side_effect=['X']), \
-                mock.patch('sys.stdout', new = StringIO()) as mock_stdout:
+                mock.patch('sys.stdout'):
             self.assertTrue(c.pitch_to_hz_loop(STD_A4))
 
     def test_good_input_standard_a4(self):
@@ -48,7 +48,7 @@ class TestPitchToHzLoop(unittest.TestCase):
 class TestHzToPitchLoop(unittest.TestCase):
     def test_exits_normally(self):
         with mock.patch('builtins.input', side_effect=['X']), \
-                mock.patch('sys.stdout', new = StringIO()) as mock_stdout:
+                mock.patch('sys.stdout'):
             self.assertTrue(c.hz_to_pitch_loop(STD_A4))
 
     def test_good_input_standard_a4(self):
@@ -211,7 +211,7 @@ class TestMidiHzConversions(unittest.TestCase):
 class TestMidiToPitchLoop(unittest.TestCase):
     def test_exits_normally(self):
         with mock.patch('builtins.input', side_effect=['X']), \
-                mock.patch('sys.stdout', new = StringIO()) as mock_stdout:
+                mock.patch('sys.stdout'):
             self.assertTrue(c.midi_to_pitch_loop(STD_A4))
 
     def test_good_input_standard_a4(self):
