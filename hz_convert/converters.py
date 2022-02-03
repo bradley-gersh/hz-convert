@@ -5,7 +5,7 @@ from dataclasses import dataclass
 # Constants
 OCTAVE_DIV = 12
 ST_HZ = 2**(1.0/OCTAVE_DIV)
-MIDI_REF = 69 # An4
+MIDI_REF = 69 # A4
 START_CHAR = '- '
 
 @dataclass
@@ -13,7 +13,6 @@ class Pitch():
     diatonic_pc: str
     accidental: str
     octave: int
-    # cents_dev_direction: str
     cents_dev: float
 
 # Interaction loops
@@ -134,7 +133,6 @@ def pitch_obj_to_midi(pitch):
     return midi_note
 
 def midi_to_pitch(midi_note):
-    # cents_dev_direction = get_cents_dev_direction(midi_note)
     rounded_pitch = round(midi_note)
     (diatonic_pc, accidental) = assign_name(rounded_pitch % 12)
     cents_dev = get_cents_dev(midi_note, rounded_pitch)
@@ -241,9 +239,9 @@ def assign_diatonic_pc(name):
     try:
         diatonic_pc_number = diatonic_pc_numbers[name.upper()]
     except KeyError:
-        raise KeyError('[error] Invalid pitch class name.')
-    except SyntaxError: # if .upper() fails
-        raise KeyError('[error] Invalid pitch class name.')
+        raise KeyError('Invalid pitch class name.')
+    except AttributeError: # if .upper() fails
+        raise KeyError('Invalid pitch class name.')
     else:
         return diatonic_pc_number
 

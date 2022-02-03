@@ -72,35 +72,39 @@ class TestPitchToMidi(unittest.TestCase):
         self.assertEqual(c.pitch_str_to_midi('F(1/2)#2'), 41.5)
 
 class TestPitchObjToMidi(unittest.TestCase):
-    # needs a mock for assign_diatonic_pc and a pitch object
     def test_handles_chromatic_pitches(self):
-        pitch_objs = [
-            mock.Mock(diatonic_pc='C', accidental='', octave=4, cents_dev=0.0),
-            mock.Mock(diatonic_pc='B', accidental='b', octave=3, cents_dev=0.0),
-            mock.Mock(diatonic_pc='A', accidental='#', octave=3, cents_dev=0.0),
-            mock.Mock(diatonic_pc='F', accidental='x', octave=-1, cents_dev=0.0),
-            mock.Mock(diatonic_pc='D', accidental='', octave=7, cents_dev=0.0),
-            mock.Mock(diatonic_pc='E', accidental='d', octave=5, cents_dev=0.0),
-        ]
-        self.assertListEqual([c.pitch_obj_to_midi(pitch) for pitch in pitch_objs], [60.0, 58.0, 58.0, 7.0, 98.0, 74.0])
+        with mock.patch('hz_convert.converters.assign_diatonic_pc', \
+                side_effect=[0, 11, 9, 5, 2, 4]), \
+                mock.patch('hz_convert.converters.check_midi_range'):
+            pitch_objs = [
+                mock.Mock(diatonic_pc='C', accidental='', octave=4, cents_dev=0.0),
+                mock.Mock(diatonic_pc='B', accidental='b', octave=3, cents_dev=0.0),
+                mock.Mock(diatonic_pc='A', accidental='#', octave=3, cents_dev=0.0),
+                mock.Mock(diatonic_pc='F', accidental='x', octave=-1, cents_dev=0.0),
+                mock.Mock(diatonic_pc='D', accidental='', octave=7, cents_dev=0.0),
+                mock.Mock(diatonic_pc='E', accidental='d', octave=5, cents_dev=0.0),
+            ]
+            self.assertListEqual([c.pitch_obj_to_midi(pitch) for pitch in pitch_objs], [60.0, 58.0, 58.0, 7.0, 98.0, 74.0])
 
     def test_handles_microtonal_pitches(self):
-        pitch_objs = [
-            mock.Mock(diatonic_pc='C', accidental='', octave=4, cents_dev=20.0),
-            mock.Mock(diatonic_pc='B', accidental='b', octave=3, cents_dev=30.0),
-            mock.Mock(diatonic_pc='A', accidental='#', octave=3, cents_dev_direction='-', cents_dev=-50.0),
-            mock.Mock(diatonic_pc='F', accidental='x', octave=-1, cents_dev=-200.0),
-            mock.Mock(diatonic_pc='D', accidental='', octave=7, cents_dev=-3.0),
-            mock.Mock(diatonic_pc='E', accidental='d', octave=5, cents_dev=5.5)
-        ]
-        self.assertListEqual([c.pitch_obj_to_midi(pitch) for pitch in pitch_objs], [60.20, 58.30, 57.50, 5.00, 97.97, 74.06])
+        with mock.patch('hz_convert.converters.check_midi_range'):
+            pitch_objs = [
+                mock.Mock(diatonic_pc='C', accidental='', octave=4, cents_dev=20.0),
+                mock.Mock(diatonic_pc='B', accidental='b', octave=3, cents_dev=30.0),
+                mock.Mock(diatonic_pc='A', accidental='#', octave=3, cents_dev_direction='-', cents_dev=-50.0),
+                mock.Mock(diatonic_pc='F', accidental='x', octave=-1, cents_dev=-200.0),
+                mock.Mock(diatonic_pc='D', accidental='', octave=7, cents_dev=-3.0),
+                mock.Mock(diatonic_pc='E', accidental='d', octave=5, cents_dev=5.5)
+            ]
+            self.assertListEqual([c.pitch_obj_to_midi(pitch) for pitch in pitch_objs], [60.20, 58.30, 57.50, 5.00, 97.97, 74.06])
 
     def test_handles_out_of_range_pitches(self):
-        pitch_objs = [
-            mock.Mock(diatonic_pc='C', accidental='', octave=-2, cents_dev=0.0),
-            mock.Mock(diatonic_pc='C', accidental='', octave=10, cents_dev=0.0),
-        ]
-        self.assertListEqual([c.pitch_obj_to_midi(pitch) for pitch in pitch_objs], [-12, 132])
+        with mock.patch('hz_convert.converters.check_midi_range'):
+            pitch_objs = [
+                mock.Mock(diatonic_pc='C', accidental='', octave=-2, cents_dev=0.0),
+                mock.Mock(diatonic_pc='C', accidental='', octave=10, cents_dev=0.0),
+            ]
+            self.assertListEqual([c.pitch_obj_to_midi(pitch) for pitch in pitch_objs], [-12, 132])
 
 class TestPitchStrToPitchObj(unittest.TestCase):
     # needs a mock
@@ -108,9 +112,10 @@ class TestPitchStrToPitchObj(unittest.TestCase):
 
 class TestHzToMidi(unittest.TestCase):
     def test_converts_correctly(self):
-        self.assertEqual(c.hz_to_midi(440.0, 440.0), 69.0)
-        self.assertEqual(c.hz_to_midi(261.626, 440.0), 60.0)
-        self.assertEqual(c.hz_to_midi(443.0, 443.0), 69.0)
+        with mock.patch('hz_convert.converters.check_midi_range'):
+            self.assertEqual(c.hz_to_midi(440.0, 440.0), 69.0)
+            self.assertEqual(c.hz_to_midi(261.626, 440.0), 60.0)
+            self.assertEqual(c.hz_to_midi(443.0, 443.0), 69.0)
 
 class TestMidiToPitchLoop(unittest.TestCase):
     def test_exits_normally(self):
@@ -169,11 +174,8 @@ class TestOutputs(unittest.TestCase):
         self.assertEqual(c.hz_string([440, 323.4445, 289.2]), '- Hz values: 440.00, 323.44, 289.20')
 
     def test_hz_string_bad_input(self):
-        with self.assertRaises(TypeError), \
-                mock.patch('sys.stdout', new = StringIO()) as mock_stdout:
+        with self.assertRaisesRegex(TypeError, 'Hz values must be floats.'):
             c.hz_string([240.5, 'invalid Hz value'])
-            out = mock_stdout.getvalue().strip().split('\n')[-1]
-            self.assertEqual(out, '[BUG] Invalid pitch class number.')
 
     def test_pitch_string_good_input(self):
         pitches = [
@@ -193,11 +195,8 @@ class TestOutputs(unittest.TestCase):
         self.assertEqual(c.midi_string([60.20, 43.9, 15], microtonal = True), '- MIDI values: 60.20, 43.90, 15.00')
 
     def test_midi_string_broken_input(self):
-        with self.assertRaises(TypeError), \
-                mock.patch('sys.stdout', new = StringIO()) as mock_stdout:
+        with self.assertRaisesRegex(TypeError, 'MIDI values must be numerical'):
             c.midi_string([34, 'invalid value'])
-            out = mock_stdout.getvalue().strip().split('\n')[-1]
-            self.assertEqual(out, 'MIDI values must be numerical.')
 
 class TestPitchToMidiHelpers(unittest.TestCase):
     def test_compute_cents_dev_good_input(self):
@@ -206,18 +205,12 @@ class TestPitchToMidiHelpers(unittest.TestCase):
         self.assertEqual(c.compute_cents_dev('#', '1', '4'), ('', 25.000))
 
     def test_compute_cents_dev_restricts_accidentals(self):
-        with self.assertRaises(ValueError), \
-            mock.patch('sys.stdout', new = StringIO()) as mock_stdout:
+        with self.assertRaisesRegex(ValueError, 'Only # and b are allowed with microtone \(fraction\) notation.'):
             c.compute_cents_dev('n', '3', '4')
-            out = mock_stdout.getvalue().strip().split('\n')[-1]
-            self.assertEqual(out, '[error] Only # and b are possible with microtones.')
 
     def test_compute_cents_dev_requires_number_strings(self):
-        with self.assertRaises(ValueError), \
-            mock.patch('sys.stdout', new = StringIO()) as mock_stdout:
-            c.compute_cents_dev('d', '3', 'invalid')
-            out = mock_stdout.getvalue().strip().split('\n')[-1]
-            self.assertEqual(out, '[BUG] numerator or denominator not a number')
+        with self.assertRaisesRegex(ValueError, 'Numerator or denominator not a number.'):
+            c.compute_cents_dev('b', '3', 'invalid')
 
     def test_accidental_to_cents_dev_good_input(self):
         self.assertEqual(c.accidental_to_cents_dev(None), 0)
@@ -228,11 +221,8 @@ class TestPitchToMidiHelpers(unittest.TestCase):
         self.assertEqual(c.accidental_to_cents_dev('b'), -100)
 
     def test_accidental_to_cents_dev_broken_input(self):
-        with self.assertRaises(KeyError), \
-            mock.patch('sys.stdout', new = StringIO()) as mock_stdout:
+        with self.assertRaisesRegex(KeyError, 'Invalid accidental type.'):
             c.accidental_to_cents_dev('y')
-            out = mock_stdout.getvalue().strip().split('\n')[-1]
-            self.assertEqual(out, '[error] Invalid accidental type.')
 
 class TestMidiToPitchHelpers(unittest.TestCase):
     def test_assign_name_good_input(self):
@@ -241,23 +231,27 @@ class TestMidiToPitchHelpers(unittest.TestCase):
         self.assertTupleEqual(c.assign_name(10), ('B', 'b'))
 
     def test_assign_name_fails_out_of_range(self):
-        with self.assertRaises(KeyError), \
-                mock.patch('sys.stdout', new = StringIO()) as mock_stdout:
+        with self.assertRaisesRegex(KeyError, 'Invalid pitch class number.'):
             c.assign_name(12)
-            out = mock_stdout.getvalue().strip().split('\n')[-1]
-            self.assertEqual(out, '[BUG] Invalid pitch class number.')
 
     def test_assign_diatonic_pc_good_input(self):
         self.assertEqual(c.assign_diatonic_pc('F'), 5)
         self.assertEqual(c.assign_diatonic_pc('B'), 11)
 
     def test_assign_diatonic_pc_broken_input(self):
-        with self.assertRaises(KeyError), \
-                mock.patch('sys.stdout', new = StringIO()) as mock_stdout:
-            c.assign_name('invalid name')
-            c.assign_name(8)
+        with self.assertRaisesRegex(KeyError, 'Invalid pitch class name.'):
+            c.assign_diatonic_pc('invalid name')
+
+        with self.assertRaisesRegex(KeyError, 'Invalid pitch class name.'):
+            c.assign_diatonic_pc(8)
+
+    def test_check_midi_range(self):
+        with mock.patch('sys.stdout', new = StringIO()) as mock_stdout:
+            c.check_midi_range(-1)
+            c.check_midi_range(128)
             out = mock_stdout.getvalue().strip().split('\n')[-2:]
-            self.assertListEqual(out, ['[error] Invalid pitch class name.', '[error] Invalid pitch name.'])
+            warning = '[warning] MIDI note outside of the defined range 0-127.'
+            self.assertListEqual(out, [warning, warning])
 
     def test_get_octave(self):
         self.assertEqual(c.get_octave(60), 4)
