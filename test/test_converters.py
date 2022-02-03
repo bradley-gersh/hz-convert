@@ -73,7 +73,11 @@ class TestPitchToMidi(unittest.TestCase):
 
 class TestPitchObjToMidi(unittest.TestCase):
     # needs a mock for assign_diatonic_pc and a pitch object
-    pass
+    pitch_objs = [
+        mock.Mock(pitch_class_name='C', octave=4, cents_dev_direction='+', cents_dev=0.0),
+        mock.Mock(pitch_class_name='Bb', octave=4, cents_dev_direction='+', cents_dev=0.0),
+        mock.Mock(pitch_class_name='C', octave=4, cents_dev_direction='+', cents_dev=0.0),
+    ]
 
 class TestPitchStrToPitchObj(unittest.TestCase):
     # needs a mock
@@ -175,21 +179,21 @@ class TestOutputs(unittest.TestCase):
             self.assertEqual(out, 'MIDI values must be numerical.')
 
 class TestPitchToMidiHelpers(unittest.TestCase):
-    def test_microtone_to_cents_dev_good_input(self):
-        self.assertEqual(c.microtone_to_cents_dev('b', '3', '4'), -75.000)
-        self.assertEqual(c.microtone_to_cents_dev('#', '1', '4'), 25.000)
+    def test_accidental_to_cents_dev_good_input(self):
+        self.assertEqual(c.accidental_to_cents_dev('b', '3', '4'), -75.000)
+        self.assertEqual(c.accidental_to_cents_dev('#', '1', '4'), 25.000)
 
-    def test_microtone_to_cents_dev_restricts_accidentals(self):
+    def test_accidental_to_cents_dev_restricts_accidentals(self):
         with self.assertRaises(ValueError), \
             mock.patch('sys.stdout', new = StringIO()) as mock_stdout:
-            c.microtone_to_cents_dev('n', '3', '4')
+            c.accidental_to_cents_dev('n', '3', '4')
             out = mock_stdout.getvalue().strip().split('\n')[-1]
             self.assertEqual(out, '[error] Only # and b are possible with microtones.')
 
-    def test_microtone_to_cents_dev_requires_number_strings(self):
+    def test_accidental_to_cents_dev_requires_number_strings(self):
         with self.assertRaises(ValueError), \
             mock.patch('sys.stdout', new = StringIO()) as mock_stdout:
-            c.microtone_to_cents_dev('d', '3', 'invalid')
+            c.accidental_to_cents_dev('d', '3', 'invalid')
             out = mock_stdout.getvalue().strip().split('\n')[-1]
             self.assertEqual(out, '[BUG] numerator or denominator not a number')
 
@@ -209,7 +213,7 @@ class TestPitchToMidiHelpers(unittest.TestCase):
             self.assertEqual(out, '[error] Invalid accidental type.')
 
 class TestMidiToPitchHelpers(unittest.TestCase):
-    def test_assign_name_to_Cn(self):
+    def test_assign_name_good_input(self):
         self.assertEqual(c.assign_name(0), 'Cn')
         self.assertEqual(c.assign_name(8), 'G#')
         self.assertEqual(c.assign_name(10), 'Bb')
@@ -220,6 +224,18 @@ class TestMidiToPitchHelpers(unittest.TestCase):
             c.assign_name(12)
             out = mock_stdout.getvalue().strip().split('\n')[-1]
             self.assertEqual(out, '[BUG] Invalid pitch class number.')
+
+    def test_assign_diatonic_pc_good_input(self):
+        self.assertEqual(c.assign_diatonic_pc('F'), 5)
+        self.assertEqual(c.assign_diatonic_pc('B'), 11)
+
+    def test_assign_diatonic_pc_broken_input(self):
+        with self.assertRaises(KeyError), \
+                mock.patch('sys.stdout', new = StringIO()) as mock_stdout:
+            c.assign_name('invalid name')
+            c.assign_name(8)
+            out = mock_stdout.getvalue().strip().split('\n')[-2:]
+            self.assertListEqual(out, ['[error] Invalid pitch class name.', '[error] Invalid pitch name.'])
 
     def test_get_octave(self):
         self.assertEqual(c.get_octave(60), 4)

@@ -112,13 +112,20 @@ def pitch_str_to_pitch_obj(pitch_str):
 
     (pitch_name, numerator, denominator, accidental, octave) = match.group(1, 3, 4, 5, 6)
 
-    cents_dev = microtone_to_cents_dev(accidental, numerator, denominator)
+    cents_dev = accidental_to_cents_dev(accidental, numerator, denominator)
 
     return Pitch(pitch_name, int(octave), '+', float(cents_dev))
 
 def pitch_obj_to_midi(pitch):
-    diatonic_class = assign_diatonic_pc(pitch.pitch_class_name)
-    midi_note = round(diatonic_class + OCTAVE_DIV * (pitch.octave + 1) + pitch.cents_dev / 100, 2)
+    diatonic_class = assign_diatonic_pc(pitch.pitch_class_name[0])
+
+    dev_modifier = accidental_to_cents_dev(pitch.pitch_class_name[1], None, None) \
+                    if len(pitch.pitch_class_name) > 1 \
+                    else 0
+
+    cents_dev = pitch.cents_dev + dev_modifier
+
+    midi_note = round(diatonic_class + OCTAVE_DIV * (pitch.octave + 1) + cents_dev / 100, 2)
 
     return midi_note
 
@@ -229,7 +236,9 @@ def assign_diatonic_pc(name):
     try:
         diatonic_pc_number = diatonic_pc_numbers[name.upper()]
     except KeyError:
-        raise KeyError('[error] Invalid pitch class name')
+        raise KeyError('[error] Invalid pitch class name.')
+    except SyntaxError: # if .upper() fails
+        raise KeyError('[error] Invalid pitch class name.')
     else:
         return diatonic_pc_number
 
@@ -252,9 +261,10 @@ def accidental_to_value(accidental):
     else:
         return accidental_value
 
-def microtone_to_cents_dev(accidental, numerator, denominator):
+def accidental_to_cents_dev(accidental, numerator, denominator):
     accidental_value = accidental_to_value(accidental)
 
+    # If we have a microtone
     if numerator is not None and denominator is not None:
         if (accidental not in ('b', '#')):
             raise ValueError('Only # and b are possible with microtone (fraction) notation.')
