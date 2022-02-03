@@ -93,8 +93,10 @@ def midi_to_pitch_loop(a4_hz):
 
 # Conversion functions
 def pitch_str_to_midi(pitch_str):
-    midi = -1
+    pitch_obj = pitch_str_to_pitch_obj(pitch_str)
+    return pitch_obj_to_midi(pitch_obj)
 
+def pitch_str_to_pitch_obj(pitch_str):
     pitch_name_format = '([a-gA-G])'
     microtone_format = '(\(([0-9]+)\/([0-9]+)\))'
     accidental_format = '([nb#xd])'
@@ -112,10 +114,7 @@ def pitch_str_to_midi(pitch_str):
 
     cents_dev = microtone_to_cents_dev(accidental, numerator, denominator)
 
-    pitch = Pitch(pitch_name, int(octave), '+', float(cents_dev))
-    midi = pitch_obj_to_midi(pitch)
-
-    return midi
+    return Pitch(pitch_name, int(octave), '+', float(cents_dev))
 
 def pitch_obj_to_midi(pitch):
     diatonic_class = assign_diatonic_pc(pitch.pitch_class_name)

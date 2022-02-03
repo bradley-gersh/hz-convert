@@ -53,8 +53,9 @@ class TestHzToPitchLoop(unittest.TestCase):
             self.assertEqual(out, '[error] Syntax error: Not a numerical input.')
 
 class TestPitchToMidi(unittest.TestCase):
-    # Needs mocks for microtone_to_cents_dev
-    # and for pitch_obj_to_midi
+    # This function is basically a wrapper for two other functions,
+    # so here it receives an integration test.
+
     def test_handles_simple_input(self):
         self.assertEqual(c.pitch_str_to_midi('An4'), 69.0)
         self.assertEqual(c.pitch_str_to_midi('C4'), 60.0)
@@ -72,6 +73,10 @@ class TestPitchToMidi(unittest.TestCase):
 
 class TestPitchObjToMidi(unittest.TestCase):
     # needs a mock for assign_diatonic_pc and a pitch object
+    pass
+
+class TestPitchStrToPitchObj(unittest.TestCase):
+    # needs a mock
     pass
 
 class TestHzToMidi(unittest.TestCase):
