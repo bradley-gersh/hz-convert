@@ -2,6 +2,8 @@ import math
 import re
 from dataclasses import dataclass
 
+from test.test_converters import STD_A4
+
 # Constants
 OCTAVE_DIV = 12
 ST_HZ = 2**(1.0/OCTAVE_DIV)
@@ -32,18 +34,17 @@ def pitch_to_hz_loop(a4_hz):
         if pitch_in in ('X', 'x'):
             return True
 
-        pitches = pitch_in.split(' ')
+        conversions = from_pitch(pitch_in, a4_hz)
 
-        try:
-            midi_notes = [pitch_str_to_midi(pitch) for pitch in pitches]
-            hz = [midi_to_hz(float(midi_note), a4_hz) for midi_note in midi_notes]
-            microtonal = any([midi_note % 1 != 0 for midi_note in midi_notes])
-        except Exception as e:
-            print('[error] Syntax error: ', end = '')
-            print(e)
-        else:
-            print(midi_string(midi_notes, microtonal))
-            print(hz_string(hz))
+        if conversions is None:
+            continue
+
+        midi_notes = conversions['midi']
+        hz = conversions['hz']
+        microtonal = any([midi_note % 1 != 0 for midi_note in midi_notes])
+
+        print(midi_string(midi_notes, microtonal))
+        print(hz_string(hz))
 
 def hz_to_pitch_loop(a4_hz):
     print('Enter number as a decimal. Type X to quit.\n')
@@ -54,20 +55,17 @@ def hz_to_pitch_loop(a4_hz):
         if hz_in in ('X', 'x'):
             return True
 
-        hzs = hz_in.split(' ')
+        conversions = from_hz(hz_in, a4_hz)
 
-        try:
-            midi_notes = [hz_to_midi(float(hz), a4_hz) for hz in hzs]
-            pitch_data = [midi_to_pitch(midi_note) for midi_note in midi_notes]
-            microtonal = any([midi_note % 1 != 0 for midi_note in midi_notes])
-        except ValueError:
-            print('[error] Syntax error: Not a numerical input.')
-        except Exception as e:
-            print('[error] Syntax error: ', end = '')
-            print(e)
-        else:
-            print(pitch_string(pitch_data))
-            print(midi_string(midi_notes, microtonal))
+        if conversions is None:
+            continue
+
+        pitches = conversions['pitch']
+        midi_notes = conversions['midi']
+        microtonal = any([midi_note % 1 != 0 for midi_note in midi_notes])
+
+        print(pitch_string(pitches))
+        print(midi_string(midi_notes, microtonal))
 
 
 def midi_to_pitch_loop(a4_hz):
@@ -79,26 +77,83 @@ def midi_to_pitch_loop(a4_hz):
         if midi_in in ('X', 'x'):
             return True
 
-        midi_notes = midi_in.split(' ')
+        conversions = from_midi(midi_in, a4_hz)
 
-        try:
-            pitches = [midi_to_pitch(float(midi_note)) for midi_note in midi_notes]
-            hzs = [midi_to_hz(float(midi_note), a4_hz) for midi_note in midi_notes]
-        except ValueError:
-            print('[error] Syntax error: Not a numerical input.')
-        except Exception as e:
-            print('[error] Syntax error: ', end='')
-            print(e)
-        else:
-            print(pitch_string(pitches))
-            print(hz_string(hzs))
+        if conversions is None:
+            continue
+
+        pitches = conversions['pitch']
+        hzs = conversions['hz']
+
+        print(pitch_string(pitches))
+        print(hz_string(hzs))
 
 # Conversion functions
-def pitch_str_to_midi(pitch_str):
-    pitch_obj = pitch_str_to_pitch_obj(pitch_str)
-    return pitch_obj_to_midi(pitch_obj)
+def from_pitch(pitches, a4_hz=STD_A4):
+    if type(pitches) == str:
+        pitches = pitches.split(' ')
 
-def pitch_str_to_pitch_obj(pitch_str):
+    if type(pitches) != list:
+        raise ValueError('[error] from_pitch requires a string or list input.')
+
+    try:
+        midi_notes = [one_pitch_str_to_midi(pitch) for pitch in pitches]
+        hz = [one_midi_to_hz(float(midi_note), a4_hz) for midi_note in midi_notes]
+    except ValueError as e:
+        raise e
+    else:
+        return {
+            'midi': midi_notes,
+            'hz': hz
+        }
+
+def from_midi(midi_notes, a4_hz=STD_A4):
+    if type(midi_notes) == str:
+        midi_notes = midi_notes.split(' ')
+
+    if type(midi_notes) in (float, int):
+        midi_notes = [float(midi_notes)]
+
+    if type(midi_notes) != list:
+        raise ValueError('[error] from_midi requires a number, string, or list input.')
+
+    try:
+        pitches = [one_midi_to_pitch(float(midi_note)) for midi_note in midi_notes]
+        hzs = [one_midi_to_hz(float(midi_note), a4_hz) for midi_note in midi_notes]
+    except ValueError as e:
+        raise e
+    else:
+        return {
+            'pitch': pitches,
+            'hz': hzs
+        }
+
+def from_hz(hzs, a4_hz=STD_A4):
+    if type(hzs) == str:
+        hzs = hzs.split(' ')
+
+    if type(hzs) in (float, int):
+        hzs = [float(hzs)]
+
+    if type(hzs) != list:
+        raise ValueError('[error] from_hz requires a number, string, or list input.')
+
+    try:
+        midi_notes = [one_hz_to_midi(float(hz), a4_hz) for hz in hzs]
+        pitches = [one_midi_to_pitch(midi_note) for midi_note in midi_notes]
+    except ValueError:
+        raise ValueError('Not a numerical input.')
+    else:
+        return {
+            'pitch': pitches,
+            'midi': midi_notes
+        }
+
+def one_pitch_str_to_midi(pitch_str):
+    pitch_obj = one_pitch_str_to_pitch_obj(pitch_str)
+    return one_pitch_obj_to_midi(pitch_obj)
+
+def one_pitch_str_to_pitch_obj(pitch_str):
     pitch_name_format = '([a-gA-G])'
     microtone_format = '(\(([0-9]+)\/([0-9]+)\))'
     accidental_format = '([nb#xd])'
@@ -129,7 +184,7 @@ def pitch_str_to_pitch_obj(pitch_str):
 
     return Pitch(pitch_name, accidental, octave, cents_dev)
 
-def pitch_obj_to_midi(pitch):
+def one_pitch_obj_to_midi(pitch):
     diatonic_class = assign_diatonic_pc(pitch.diatonic_pc)
 
     # Account for the accidental
@@ -140,7 +195,7 @@ def pitch_obj_to_midi(pitch):
 
     return midi_note
 
-def midi_to_pitch(midi_note):
+def one_midi_to_pitch(midi_note):
     rounded_pitch = round(midi_note)
     (diatonic_pc, accidental) = assign_name(rounded_pitch % 12)
     cents_dev = get_cents_dev(midi_note, rounded_pitch)
@@ -148,12 +203,12 @@ def midi_to_pitch(midi_note):
 
     return Pitch(diatonic_pc, accidental, octave, cents_dev)
 
-def hz_to_midi(hz, a4_hz):
+def one_hz_to_midi(hz, a4_hz):
     midi_note = round(OCTAVE_DIV * (math.log(hz / a4_hz, 2)) + MIDI_REF, 3)
     check_midi_range(midi_note)
     return midi_note
 
-def midi_to_hz(midi_note, a4_hz):
+def one_midi_to_hz(midi_note, a4_hz):
     distance = midi_note - MIDI_REF
     return round(a4_hz * (ST_HZ**distance), 3)
 
