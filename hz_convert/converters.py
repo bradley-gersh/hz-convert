@@ -12,6 +12,7 @@ START_CHAR = '- '
 
 @dataclass
 class Pitch():
+    name: str
     diatonic_pc: str
     accidental: str
     octave: int
@@ -118,8 +119,7 @@ def from_midi(midi_notes, a4_hz=STD_A4):
         raise ValueError('[error] from_midi requires a number, string, or list input.')
 
     try:
-        pitch_objs = [one_midi_to_pitch(float(midi_note)) for midi_note in midi_notes]
-        pitches = [one_pitch_string(pitch) for pitch in pitch_objs]
+        pitches = [one_midi_to_pitch(float(midi_note)) for midi_note in midi_notes]
         hzs = [one_midi_to_hz(float(midi_note), a4_hz) for midi_note in midi_notes]
     except ValueError as e:
         raise e
@@ -127,7 +127,6 @@ def from_midi(midi_notes, a4_hz=STD_A4):
         return {
             'hz': hzs,
             'pitch': pitches,
-            'pitch_objs': pitch_objs
         }
 
 def from_hz(hzs, a4_hz=STD_A4):
@@ -145,15 +144,13 @@ def from_hz(hzs, a4_hz=STD_A4):
 
     try:
         midi_notes = [one_hz_to_midi(float(hz), a4_hz) for hz in hzs]
-        pitch_objs = [one_midi_to_pitch(midi_note) for midi_note in midi_notes]
-        pitches = [one_pitch_string(pitch) for pitch in pitch_objs]
+        pitches = [one_midi_to_pitch(midi_note) for midi_note in midi_notes]
     except ValueError:
         raise ValueError('Not a numerical input.')
     else:
         return {
             'midi': midi_notes,
             'pitch': pitches,
-            'pitch_objs': pitch_objs
         }
 
 def one_pitch_str_to_midi(pitch_str):
@@ -174,7 +171,7 @@ def one_pitch_str_to_pitch_obj(pitch_str):
     if not match:
         raise ValueError("Invalid pitch format. At minimum, a pitch and octave (e.g. 'C4', 'Bb3') are required. Refer to instructions.\n")
 
-    (pitch_name, numerator, denominator, accidental, octave) = match.group(1, 3, 4, 5, 6)
+    (diatonic_pc, numerator, denominator, accidental, octave) = match.group(1, 3, 4, 5, 6)
 
     octave = int(octave)
 
@@ -188,7 +185,9 @@ def one_pitch_str_to_pitch_obj(pitch_str):
     else:
         accidental, cents_dev = compute_cents_dev(accidental, numerator, denominator)
 
-    return Pitch(pitch_name, accidental, octave, cents_dev)
+    pitch = add_pitch_name(Pitch('', diatonic_pc, accidental, octave, cents_dev))
+
+    return pitch
 
 def one_pitch_obj_to_midi(pitch):
     diatonic_class = assign_diatonic_pc(pitch.diatonic_pc)
@@ -207,7 +206,9 @@ def one_midi_to_pitch(midi_note):
     cents_dev = get_cents_dev(midi_note, rounded_pitch)
     octave = get_octave(midi_note)
 
-    return Pitch(diatonic_pc, accidental, octave, cents_dev)
+    pitch = add_pitch_name(Pitch('', diatonic_pc, accidental, octave, cents_dev))
+
+    return pitch
 
 def one_hz_to_midi(hz, a4_hz):
     midi_note = round(OCTAVE_DIV * (math.log(hz / a4_hz, 2)) + MIDI_REF, 3)
@@ -378,3 +379,9 @@ def get_octave(midi_note):
 def check_midi_range(midi_note):
     if midi_note < 0 or midi_note > 127:
         print('[warning] MIDI note outside of the defined range 0-127.')
+
+def add_pitch_name(pitch):
+    name = one_pitch_string(pitch)
+    pitch.name = name
+
+    return pitch

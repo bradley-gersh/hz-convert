@@ -1,2 +1,2 @@
 import hz_convert
-hz_convert.start()
+hz_convert.main()

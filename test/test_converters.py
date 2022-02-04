@@ -8,7 +8,8 @@ STD_A4 = 440.0
 NEW_A4 = 423.519
 
 def compare_pitch_objs(pitch1, pitch2):
-    return ((pitch1.diatonic_pc == pitch2.diatonic_pc) and \
+    return ((pitch1.name == pitch2.name) and \
+        (pitch1.diatonic_pc == pitch2.diatonic_pc) and \
         (pitch1.accidental == pitch2.accidental) and \
         (pitch1.octave == pitch2.octave) and \
         (pitch1.cents_dev == pitch2.cents_dev))
@@ -135,11 +136,11 @@ class TestPitchStrToPitchObj(unittest.TestCase):
         ]):
             pitch_strs = ['Cn3', 'C3', 'Bb2', 'Ex-2', 'Gd200']
             expected_objs = [
-                c.Pitch('C', 'n', 3, 0),
-                c.Pitch('C', '', 3, 0),
-                c.Pitch('B', 'b', 2, 0),
-                c.Pitch('E', 'x', -2, 0),
-                c.Pitch('G', 'd', 200, 0),
+                c.Pitch('Cn3 (+0.0 c)', 'C', 'n', 3, 0),
+                c.Pitch('C3 (+0.0 c)', 'C', '', 3, 0),
+                c.Pitch('Bb2 (+0.0 c)', 'B', 'b', 2, 0),
+                c.Pitch('Ex-2 (+0.0 c)', 'E', 'x', -2, 0),
+                c.Pitch('Gd200 (+0.0 c)', 'G', 'd', 200, 0),
             ]
             computed_objs = [c.one_pitch_str_to_pitch_obj(pitch_str) for pitch_str in pitch_strs]
             comparison = [compare_pitch_objs(computed_obj, expected_obj) for computed_obj, expected_obj in zip(computed_objs, expected_objs)]
@@ -152,9 +153,9 @@ class TestPitchStrToPitchObj(unittest.TestCase):
         ]):
             pitch_strs = ['C(1/3)#3', 'D(5/8)b-1', 'B(13/5)#-5']
             expected_objs = [
-                c.Pitch('C', '', 3, 33.333),
-                c.Pitch('D', '', -1, -62.500),
-                c.Pitch('B', '', -5, 260.000),
+                c.Pitch('C3 (+33.3 c)', 'C', '', 3, 33.333),
+                c.Pitch('D-1 (-62.5 c)', 'D', '', -1, -62.500),
+                c.Pitch('B-5 (+260.0 c)', 'B', '', -5, 260.000),
             ]
             computed_objs = [c.one_pitch_str_to_pitch_obj(pitch_str) for pitch_str in pitch_strs]
             comparison = [compare_pitch_objs(computed_obj, expected_obj) for computed_obj, expected_obj in zip(computed_objs, expected_objs)]
@@ -278,8 +279,8 @@ class TestOutputs(unittest.TestCase):
 
     def test_pitch_string_good_input(self):
         pitches = [
-            c.Pitch('A', '', 3, 23.2),
-            c.Pitch('D', '#', 5, -43.1)
+            c.Pitch('A3 (+23.2 c)', 'A', '', 3, 23.2),
+            c.Pitch('D#5 (-43.1 c)', 'D', '#', 5, -43.1)
         ]
 
         self.assertEqual(c.pitch_string(pitches[0]), '- Pitch name: A3 (+23.2 c)')
