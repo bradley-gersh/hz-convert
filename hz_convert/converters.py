@@ -90,22 +90,25 @@ def midi_to_pitch_loop(a4_hz):
         print(hz_string(hzs))
 
 # Conversion functions
-def from_pitch(pitches, a4_hz=STD_A4):
-    if type(pitches) == str:
-        pitches = pitches.split(' ')
+def from_pitch(pitch_strs, a4_hz=STD_A4):
+    if type(pitch_strs) == str:
+        pitch_strs = pitch_strs.split(' ')
 
-    if type(pitches) != list:
+    if type(pitch_strs) != list:
         raise ValueError('[error] from_pitch requires a string or list input.')
 
     try:
-        midi_notes = [one_pitch_str_to_midi(pitch) for pitch in pitches]
+        midi_notes = [one_pitch_str_to_midi(pitch_str) for pitch_str in pitch_strs]
         hz = [one_midi_to_hz(float(midi_note), a4_hz) for midi_note in midi_notes]
     except ValueError as e:
         raise e
     else:
         return {
+            'hz': hz,
             'midi': midi_notes,
-            'hz': hz
+            'pitch': [one_pitch_str_to_pitch_obj(pitch_str) for pitch_str in pitch_strs],
+            'pitch_names': pitch_strs,
+            'a4': a4_hz
         }
 
 def from_midi(midi_notes, a4_hz=STD_A4):
@@ -126,7 +129,10 @@ def from_midi(midi_notes, a4_hz=STD_A4):
     else:
         return {
             'hz': hzs,
+            'midi': midi_notes,
             'pitch': pitches,
+            'pitch_names': [pitch.name for pitch in pitches],
+            'a4': a4_hz
         }
 
 def from_hz(hzs, a4_hz=STD_A4):
@@ -149,8 +155,11 @@ def from_hz(hzs, a4_hz=STD_A4):
         raise ValueError('Not a numerical input.')
     else:
         return {
+            'hz': hzs,
             'midi': midi_notes,
             'pitch': pitches,
+            'pitch_names': [pitch.name for pitch in pitches],
+            'a4': a4_hz
         }
 
 def one_pitch_str_to_midi(pitch_str):

@@ -27,10 +27,11 @@ python hz_convert.py
 You will be asked to set a reference point for the note A4 (default is
 A4 = 440 Hz), then to select the type of conversion you want from a menu.
 Specific instructions for each conversion are given after you select a type.
+Each converter accepts individual values or a space-delimited series of values.
 
 At any time, type `x` to return to the main menu and `x` again to exit.
 
-#### Sample entries:
+#### Sample entries
 
 1. From pitch names:
 
@@ -56,7 +57,9 @@ At any time, type `x` to return to the main menu and `x` again to exit.
   - Hz values: 261.63, 33.33, 6.88, 23679.64
   ```
 
-### Using as a package
+### 2. Using as a package
+
+#### Installation
 
 This method is suggested if you wish to incorporate the conversions into some
 larger Python program or script. Using the package manager `pip`, from the top
@@ -69,7 +72,8 @@ pip install .
 to install the `hz_convert` package in your Python environment.
 
 - If you are using `pip` version 21 or lower, you may receive a message
-  prompting you to instead use the command `pip install . --use-feature=in-tree-build`.
+  prompting you to instead use the command `pip install .
+  --use-feature=in-tree-build` .
 - If you wish to modify the source and use the changes without reinstalling
   each time, use the `-e` option: `pip install . -e`
 
@@ -79,14 +83,52 @@ From within a Python REPL or script, you can then import the package:
 import hz_convert
 ```
 
-This gives you access to four functions and one class.
+#### Features
 
-- `from_midi()`, `from_hz()`, `from_pc()`: The main
-- `Pitch`: A dataclass representing how pitches are stored internally. These are
-  exposed because they are easier to work with programmatically than the
-  pitch names.
-- `main()`: This function will run the same script program as invoking
-  `python hz_convert.py` from the command line.
+Pitches are represented by the `Pitch` dataclass, which has the following
+fields:
+
+- `name`: A human-readable name for the pitch as a string, like `'Bb4 (+2.0 c)`.
+- `diatonic_pc`: The diatonic letter name, one of `A`, `B`, `C`, `D`, `E`, `F`,
+  `G`.
+- `accidental`: Can be one of `b` (flat), `#` (sharp), `n` or `''` (natural),
+  `d` (double flat), or `#` (double sharp).
+- `octave`: An integer for the octave in scientific notation, where octave 4
+  runs from middle C (`C4`) to the B on the treble staff (`B4`).
+- `cents_dev`: A float representing the microtonal shift in cents from the
+  chromatic pitch indicated by `diatonic_pc` and `accidental`.
+
+The package exposes three primary functions:
+
+- `from_midi(input, a4_hz=440.0)`: Accepts a number (`int` or `float`), list of
+  numbers, or space-delimited string of numbers representing the MIDI values to
+  convert. Values can be outside the 0-127 range of standard MIDI.
+- `from_hz(input, a4_hz=440.0)`: Accepts a number (`int` or `float`), list of
+  numbers, or space-delimited string of numbers representing the frequencies
+  (Hz) to convert. Input values must be greater than 0.
+- `from_pc(input, a4_hz=440.0)`: Accepts a list of strings or one
+  space-delimited string containing pitch names to convert to MIDI or frequency
+  (Hz) values.
+
+Each function takes an optional second argument that specifies which frequency
+is assigned to A4 (default 440.0). Note that this only affects computations
+to and from frequency values (Hz).  The correspondence between MIDI numbers and
+pitch names does not change if A4 is set to a different frequency.
+
+Each function returns a dictionary of the following form:
+
+```python
+{
+    'hz': list[float],          # Frequency values (Hz) of the entered pitches
+    'midi': list[float],        # MIDI values of the entered pitches
+    'pitch': list[Pitch],       # Pitch objects for the entered pitches
+    'pitch_names': list[str],   # List of human-readable pitch names
+    'a4': float                 # The value of A4 used for computing frequencies
+}
+```
+
+The package also exposes the `main()` method, which runs the same interactive
+script as calling `python hz_convert.py` from the command line.
 
 ## Testing
 
@@ -102,5 +144,5 @@ Discovery mode should load the tests automatically (currently 57).
 
 ## License and Contact
 
-This repository is released under the MIT license. Please attribute and feel
-free to use. Contact me with any suggestions!
+(c) 2021-2022 Bradley Gersh. This repository is released under the MIT license.
+Please attribute and feel free to use. Contact me with any suggestions!
