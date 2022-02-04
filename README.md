@@ -2,15 +2,15 @@
 
 This Python package converts mutually between sine-tone frequencies (Hz), MIDI
 pitch numbers, and pitch names in scientific pitch notation (e.g. "E-flat 4").
-It allows you to set a custom tuning for A4, and it can handle microtones in
-both input and output. It can be used as a package imported into other scripts
-or as a standalone application.
+It handles microtones in both input and output and can allow for A4 to be
+tuned to a non-standard frequency. The package can be imported into other
+projects or used as a standalone application from the command line.
 
 ## Usage
 
-Python 3 is required, ideally at least 3.7. First, download the repository and
-unzip it to some directory. Navigate into that directory, then follow one of the
-two usage options below.
+Python 3 is required (ideally at least 3.7). Download and unzip the repository,
+then from the top of the unzipped directory, follow one of the usage options
+below.
 
 ### 1. Using as an interactive script
 
@@ -18,23 +18,27 @@ This method is suggested if you want to use the script as a simple calculator.
 It allows you to enter strings of input and receive the conversions between
 pitch names, MIDI values, and frequencies (Hz).
 
-From the command line, navigate into the top of project directory and execute:
+From the top of project directory, execute from the command line:
 
 ```bash
 python hz_convert.py
 ```
 
 You will be asked to set a reference point for the note A4 (default is
-A4 = 440 Hz), then to select the type of conversion you want from a menu.
-Specific instructions for each conversion are given after you select a type.
-Each converter accepts individual values or a space-delimited series of values.
+A4 = 440 Hz), then to select the type of conversion you want. Specific
+instructions for each conversion are given after you select a type; see below
+for more details. Each converter accepts individual values or a space-delimited
+series of values.
 
-At any time, type `x` to return to the main menu and `x` again to exit.
+At any time, type `x` to return to the main menu and `x` again to exit. `Ctrl-D`
+will also exit gracefully.
 
-#### Sample use (as interactive script)
+#### Sample use as interactive script
 
-1. From pitch names (menu option 1). For more on the pitch-name format, see
-below.
+In each case, the line beginning `>` accepts user input after the `:`. The lines
+beginning `-` are returned by the script.
+
+1. From pitch names. The pitch-name format is described below.
 
   ```txt
   > Pitches: C4 D#3 E(1/2)b-1
@@ -42,7 +46,7 @@ below.
   - Hz values: 261.63, 155.56, 10.01
   ```
 
-2. From frequency values (menu option 2). All entries must be greater than 0.
+2. From frequency values. All entries must be greater than 0.
 
   ```txt
   > Hz: 2418 28.24 514
@@ -50,7 +54,7 @@ below.
   - MIDI values: 98.50, 21.46, 71.69
   ```
 
-3. From MIDI numbers (menu option 3). Floating point numbers and values outside
+3. From MIDI numbers. Floating point numbers and values outside
 the standard 0-127 range are accepted.
 
   ```txt
@@ -63,21 +67,20 @@ the standard 0-127 range are accepted.
 
 #### Installation
 
-This method is suggested if you wish to incorporate the conversions into some
-larger Python program or script. Using the package manager `pip`, from the top
-folder in this directory you can type
+This method is suggested if you wish to incorporate the conversions into another
+Python program or script. Using the package manager `pip`, you can install the `hz_convert` package to your Python environment by navigating to the top folder
+of this repository and executing
 
 ```bash
 pip install .
 ```
 
-to install the `hz_convert` package in your Python environment.
-
 - If you are using `pip` version 21 or lower, you may receive a message
-  prompting you to instead use the command `pip install .
-  --use-feature=in-tree-build` .
+  prompting you to use the command `pip install .
+  --use-feature=in-tree-build` instead.
 - If you wish to modify the source and use the changes without reinstalling
-  each time, use the `-e` option: `pip install . -e`
+  each time, add the `-e` option: `pip install . -e`
+- To uninstall, call `pip uninstall hz_convert`.
 
 From within a Python REPL or script, you can then import the package:
 
@@ -90,7 +93,8 @@ import hz_convert
 Pitches are represented by the `Pitch` dataclass, which has the following
 fields:
 
-- `name`: A human-readable name for the pitch as a string, like `'Bb4 (+2.0 c)`.
+- `name`: A human-readable name for the pitch as a string, like
+`'Bb4 (+2.0 c)'`.
 - `diatonic_pc`: The diatonic letter name, one of `A`, `B`, `C`, `D`, `E`, `F`,
   `G`.
 - `accidental`: Can be one of `b` (flat), `#` (sharp), `n` or `''` (natural),
@@ -132,7 +136,7 @@ Each function returns a dictionary of the following form:
 The package also exposes the `main()` method, which runs the same interactive
 script as calling `python hz_convert.py` from the command line.
 
-#### Sample use (as package)
+#### Sample use as package
 
 ```python
 import hz_convert as hc
@@ -142,18 +146,17 @@ y = hc.from_hz([249, 424.24, 86, 7712], a4_hz=444.2) # Changing the value of A4
 z = hc.from_pitch('C4 Bb3 A-1 Gx2 E(2/3)b6')         # Using a string as input
 
 '''
-One sample returned value:
+One returned value:
 
 x = {
     'hz': [261.626, 391.995, 168.569, 47359.286, 6.378],
     'midi': [60, 67, 52.39, 150, -4.3],
     'pitch': [
         Pitch(name='C4 (+0.0 c)', diatonic_pc='C', accidental='', octave=4, cents_dev=0.0)
-        # ... and others
+        # ... and four others
       ],
     'pitch_names': [
-        'C4 (+0.0 c)', 'G4 (+0.0 c)', 'E3 (+39.0 c)', 'F#11 (+0.0 c)', \
-        'G#-2 (-30.0 c)'],
+        'C4 (+0.0 c)', 'G4 (+0.0 c)', 'E3 (+39.0 c)', 'F#11 (+0.0 c)', 'G#-2 (-30.0 c)'],
     'a4': 440.0
 }
 '''
@@ -161,47 +164,44 @@ x = {
 
 ## Pitch names
 
-All pitch names are strings that follow the format `letter_name microtone
-accidental octave` (without spaces), using the following possible values:
+All pitch names are strings that follow the format `letter_name (microtone) accidental octave` (without spaces), such as `C4`, `An4`, `Eb2`, `Gx7`, `Dd2`, `B(4/9)#0`,
+`F-2`, `C(8/3)b-3`. The different parts each have restrictions for valid input:
 
 - `letter_name`: A capital letter from `A` through `G`.
 - `microtone` (optional): A fraction of one semitone, represented as two
 positive integers surrounded by parentheses, such as `(1/3)`. Microtones
 greater than `1`, such as `(3/2)`, are accepted. If a value for `microtone` is
-included, the following `accidental` cannot be omitted and must be `b` or `#`.
+included, the following `accidental` must be `b` or `#`.
 
-  **Caution!** The fraction is taken of one *semitone*. This corresponds to
-  cents usage but does not correspond to customary usage, which considers
-  fractions of *whole tones*, relative to the diatonic pitches of C major.
+  **Caution!** The fraction in `microtone` is taken of one *semitone*. This
+  corresponds to cents usage but not to customary usage, which considers
+  fractions of *whole tones* relative to the diatonic pitches of C major.
   Customarily, for example, "D two-thirds-flat 3" is two-thirds of the way from
   D3 toward C3, so it is lower than D-flat 3. In our notation, however,
   `'D(2/3)b3'` represents the pitch two-thirds of the way from D3 toward
-  D-flat 3 and so is higher than D-flat 3.
+  D-flat 3 and is higher than D-flat 3.
 
   In practice, this means that the conventional microtone name must be
   multiplied by 2 for the fraction used in `microtone`. The name `'D(2/3)b3'`
-  is commonly called the "(one-)third tone below D3."
+  is commonly called the "(one-)third tone below D3," and "D two-thirds-flat 3"
+  is represented `'D(4/3)b3'`.
 
 - `accidental`: One of `b` (flat), `#` (sharp), `n` or `''` (natural), `d`
 (double flat), or `x` (double sharp). Assumed to be natural if omitted.
 - `octave`: An integer. Negative integers are allowed but should not be
 surrounded by parentheses. For example, MIDI note `1` corresponds to `'C#-1'`.
 
-Examples: `C4`, `An4`, `Eb2`, `Gx7`, `Dd2`, `B(4/9)#`, `F-2`, `C(8/3)b-3`
 
 ## Testing
 
-This repo comes with a testing suite that includes both unit and integration
-tests, located in the `test` folder. To run it, from the top-level folder run
-the command
+This repo comes with a testing suite of unit and integration tests in the `test`
+folder. To run it, from the top-level folder execute the command
 
 ```bash
 python -m unittest
 ```
 
-Discovery mode should load the tests automatically (currently 57).
-
 ## License and Contact
 
 (c) 2021-2022 Bradley Gersh. This repository is released under the MIT license.
-Please feel free to use with attribution. Contact me with any suggestions!
+Please feel free to use with attribution, and contact me with any suggestions!
