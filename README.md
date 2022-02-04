@@ -27,15 +27,18 @@ At any time, type `x` to return to the main menu and `x` again to exit.
 
 ### Using as a package
 
-Using the package manager `pip` (version at least 22.0.0 recommended), from the
-top folder in this directory you can type
+Using the package manager `pip`, from the top folder in this directory you can
+type
 
 ```bash
 pip install .
 ```
 
-to install the `hz_convert` package in your Python environment. Then, from
-within the Python REPL or a script, you can import the package:
+to install the `hz_convert` package in your Python environment. (If you are
+using `pip` version 21 or lower, you may receive a message prompting you to
+instead use the command `pip install . --use-feature=in-tree-build`.)
+
+Then, from within the Python REPL or a script, you can import the package:
 
 ```python
 import hz_convert

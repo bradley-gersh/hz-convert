@@ -118,14 +118,16 @@ def from_midi(midi_notes, a4_hz=STD_A4):
         raise ValueError('[error] from_midi requires a number, string, or list input.')
 
     try:
-        pitches = [one_midi_to_pitch(float(midi_note)) for midi_note in midi_notes]
+        pitch_objs = [one_midi_to_pitch(float(midi_note)) for midi_note in midi_notes]
+        pitches = [one_pitch_string(pitch) for pitch in pitch_objs]
         hzs = [one_midi_to_hz(float(midi_note), a4_hz) for midi_note in midi_notes]
     except ValueError as e:
         raise e
     else:
         return {
+            'hz': hzs,
             'pitch': pitches,
-            'hz': hzs
+            'pitch_objs': pitch_objs
         }
 
 def from_hz(hzs, a4_hz=STD_A4):
@@ -136,17 +138,22 @@ def from_hz(hzs, a4_hz=STD_A4):
         hzs = [float(hzs)]
 
     if type(hzs) != list:
-        raise ValueError('[error] from_hz requires a number, string, or list input.')
+        raise ValueError('from_hz requires a number, string, or list input.')
+
+    if any([float(hz) <= 0 for hz in hzs]):
+        raise ValueError('Hz values must be greater than 0.')
 
     try:
         midi_notes = [one_hz_to_midi(float(hz), a4_hz) for hz in hzs]
-        pitches = [one_midi_to_pitch(midi_note) for midi_note in midi_notes]
+        pitch_objs = [one_midi_to_pitch(midi_note) for midi_note in midi_notes]
+        pitches = [one_pitch_string(pitch) for pitch in pitch_objs]
     except ValueError:
         raise ValueError('Not a numerical input.')
     else:
         return {
+            'midi': midi_notes,
             'pitch': pitches,
-            'midi': midi_notes
+            'pitch_objs': pitch_objs
         }
 
 def one_pitch_str_to_midi(pitch_str):
@@ -175,7 +182,6 @@ def one_pitch_str_to_pitch_obj(pitch_str):
         accidental = ''
         if numerator is not None or denominator is not None:
             raise ValueError("Invalid pitch format. If a fraction is used, then an accidental must be included.\n")
-
 
     if numerator is None and denominator is None:
         cents_dev = 0
@@ -222,12 +228,22 @@ def pitch_string(pitches):
     else:
         prefix = 'Pitch name: '
 
+    if type(pitches[0]) == Pitch:
+        try:
+            out_str = START_CHAR + prefix + \
+                ', '.join([one_pitch_string(pitch) for pitch in pitches])
+        except TypeError:
+            raise TypeError('Unable to process pitch string data.')
+        else:
+            return out_str
+    else:
+        return START_CHAR + prefix + ', '.join(pitches)
+
+def one_pitch_string(pitch):
     try:
-        out_str = START_CHAR + prefix + ', '.join([pitch.diatonic_pc + \
-            pitch.accidental + '%i ' % pitch.octave + '(' + \
-            ('+' if pitch.cents_dev >= 0 else '-') + \
-            '%.1f c)' % abs(pitch.cents_dev) \
-            for pitch in pitches])
+        out_str = pitch.diatonic_pc + pitch.accidental + '%i ' % pitch.octave \
+            + '(' + ('+' if pitch.cents_dev >= 0 else '-') + \
+            '%.1f c)' % abs(pitch.cents_dev)
     except TypeError:
         raise TypeError('Unable to process pitch string data.')
     else:
