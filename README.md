@@ -1,6 +1,6 @@
 # Hz Convert
 
-This Python package converts mutually between sine-tone frequencies (Hz), MIDI
+This Python package converts between sine-tone frequencies (Hz), MIDI
 pitch numbers, and pitch names in scientific pitch notation (e.g. "E-flat 4").
 It handles microtones in both input and output and can allow for A4 to be
 tuned to a non-standard frequency. The package can be imported into other
@@ -8,13 +8,13 @@ projects or used as a standalone application from the command line.
 
 ## Usage
 
-Python 3 is required (ideally at least 3.7). Download and unzip the repository,
+Python 3 is required (at least 3.7 recommended). Download and unzip the repository,
 then from the top of the package directory, follow one of the usage options
 below.
 
-### 1. Using as an interactive script
+### 1. As an interactive script
 
-This method is suggested if you want to use the script as a simple calculator.
+This method is best for using the package as a simple calculator.
 It allows you to enter strings of input and receive the conversions between
 pitch names, MIDI values, and frequencies (Hz).
 
@@ -24,10 +24,10 @@ From the top of project directory, execute from the command line:
 python hz_convert.py
 ```
 
-You will be asked to set a reference point for the note A4 (default is
-A4 = 440 Hz), then to select the type of conversion you want. Specific
-instructions for each conversion are given after you select a type; see below
-for more details. Each converter accepts individual values or a space-delimited
+You will be asked to set a reference point for the note A4, defaulting to
+A4 = 440 Hz. At the menu, select the conversion type you want. Specific
+instructions for each conversion are given in the script; see below
+for more details. Each converter accepts single values or a space-delimited
 series of values.
 
 At any time, type `x` to return to the main menu and `x` again to exit. `Ctrl-D`
@@ -63,13 +63,14 @@ the standard 0-127 range are accepted.
   - Hz values: 261.63, 33.33, 6.88, 23679.64
   ```
 
-### 2. Using as a package
+### 2. As a package
 
 #### Installation
 
-This method is suggested if you wish to incorporate the conversions into another
-Python program or script. Using the package manager `pip`, you can install the `hz_convert` package to your Python environment by navigating to the top folder
-of this repository and executing
+This method is preferred for using the conversions in another
+Python program or script. Using the package manager `pip`, you can install
+the `hz_convert` package to your Python environment by navigating to the top
+folder of this repository and executing
 
 ```bash
 pip install .
@@ -164,7 +165,8 @@ x = {
 
 ## Pitch names
 
-All pitch names are strings that follow the format `letter_name (microtone) accidental octave` (without spaces), such as `C4`, `An4`, `Eb2`, `Gx7`, `Dd2`, `B(4/9)#0`,
+All pitch names are strings that follow the format `letter_name (microtone) accidental octave`
+(without spaces), such as `C4`, `An4`, `Eb2`, `Gx7`, `Dd2`, `B(4/9)#0`,
 `F-2`, `C(8/3)b-3`. The different parts each have restrictions for valid input:
 
 - `letter_name`: A capital letter from `A` through `G`.
@@ -177,7 +179,7 @@ included, the following `accidental` must be `b` or `#`.
   corresponds to cents usage but not to customary usage, which considers
   fractions of *whole tones* relative to the diatonic pitches of C major.
   Customarily, for example, "D two-thirds-flat 3" is two-thirds of the way from
-  D3 toward C3, so it is lower than D-flat 3. In our notation, however,
+  D3 toward C3, so it is lower than D-flat 3. In this package, however,
   `'D(2/3)b3'` represents the pitch two-thirds of the way from D3 toward
   D-flat 3 and is higher than D-flat 3.
 
@@ -194,14 +196,14 @@ surrounded by parentheses. For example, MIDI note `1` corresponds to `'C#-1'`.
 
 ## Testing
 
-This repo comes with a testing suite of unit and integration tests in the `test`
-folder. To run it, from the top-level folder execute the command
+This repository comes with a testing suite of unit and integration tests in
+the `test` folder. To run it, from the top-level folder execute the command
 
 ```bash
 python -m unittest
 ```
 
-## License and Contact
+## License
 
 (c) 2021-2022 Bradley Gersh. This repository is released under the MIT license.
 Please feel free to use with attribution, and contact me with any suggestions!
