@@ -9,7 +9,7 @@ projects or used as a standalone application from the command line.
 ## Usage
 
 Python 3 is required (ideally at least 3.7). Download and unzip the repository,
-then from the top of the unzipped directory, follow one of the usage options
+then from the top of the package directory, follow one of the usage options
 below.
 
 ### 1. Using as an interactive script
