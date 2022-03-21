@@ -119,13 +119,13 @@ def from_midi(midi_notes, a4_hz=STD_A4):
         midi_notes = [float(midi_notes)]
 
     if type(midi_notes) != list:
-        raise ValueError('[error] from_midi requires a number, string, or list input.')
+        print('[error] from_midi requires a number, string, or list input.')
 
     try:
         pitches = [one_midi_to_pitch(float(midi_note)) for midi_note in midi_notes]
         hzs = [one_midi_to_hz(float(midi_note), a4_hz) for midi_note in midi_notes]
     except ValueError as e:
-        raise e
+        print('[error] from_midi requires a number, string, or list input.')
     else:
         return {
             'hz': hzs,
@@ -214,6 +214,8 @@ def one_midi_to_pitch(midi_note):
     (diatonic_pc, accidental) = assign_name(rounded_pitch % 12)
     cents_dev = get_cents_dev(midi_note, rounded_pitch)
     octave = get_octave(midi_note)
+    if diatonic_pc == 'C':
+        octave += 1
 
     pitch = add_pitch_name(Pitch('', diatonic_pc, accidental, octave, cents_dev))
 

@@ -193,7 +193,6 @@ included, the following `accidental` must be `b` or `#`.
 - `octave`: An integer. Negative integers are allowed but should not be
 surrounded by parentheses. For example, MIDI note `1` corresponds to `'C#-1'`.
 
-
 ## Testing
 
 This repository comes with a testing suite of unit and integration tests in
