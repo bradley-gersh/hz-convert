@@ -35,6 +35,10 @@ def pitch_to_hz_loop(a4_hz):
         if pitch_in in ('X', 'x'):
             return True
 
+        if pitch_in == '':
+            print('Please enter one or more pitches, or X to exit.')
+            continue
+
         conversions = from_pitch(pitch_in, a4_hz)
 
         if conversions is None:
